@@ -23,7 +23,7 @@ fn main() {
             max: vec2(300.0, 300.0),
         })
         .add_systems(Startup, setup)
-        .add_systems(Update, (sys_spawn_on_click, sys_plant_move))
+        .add_systems(Update, (sys_spawn_on_click, sys_plant_move, sys_plant_grow))
         .run();
 }
 
@@ -47,6 +47,7 @@ pub fn sys_spawn_on_click(
                     return;
                 }
                 commands.spawn(Plant::new_bundle(
+                    asset_server.load("plant_base_test.png"),
                     asset_server.load("Crops/Carrot/carrot.png"),
                     pos,
                 ));
@@ -68,6 +69,33 @@ pub fn sys_plant_move(
     }
 }
 
+pub fn sys_plant_grow(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut plants: Query<(Entity, &Plant, &mut PlantGrowthState)>,
+) {
+    for (ent, plant, mut growth) in plants.iter_mut() {
+        match *growth {
+            PlantGrowthState::Empty {
+                seconds_remaining: ref mut ticks_remaining,
+            } => {
+                *ticks_remaining -= time.delta_seconds();
+                if *ticks_remaining <= 0.0 {
+                    commands.entity(ent).insert(PlantGrowthState::Fruited);
+                    commands
+                        .spawn(SpriteBundle {
+                            texture: plant.fruit_sprite.clone(),
+                            transform: Transform::from_xyz(2.0, 2.0, 1.0),
+                            ..Default::default()
+                        })
+                        .set_parent(ent);
+                }
+            }
+            PlantGrowthState::Fruited => (),
+        }
+    }
+}
+
 #[derive(Resource)]
 pub struct LevelBounds {
     pub min: Vec2,
@@ -81,12 +109,23 @@ impl LevelBounds {
 }
 
 #[derive(Component)]
-pub struct Plant;
+pub struct Plant {
+    pub fruit_sprite: Handle<Image>,
+}
+
+#[derive(Component)]
+pub enum PlantGrowthState {
+    Empty { seconds_remaining: f32 },
+    Fruited,
+}
 
 impl Plant {
-    fn new_bundle(texture: Handle<Image>, loc: Vec2) -> impl Bundle {
+    fn new_bundle(texture: Handle<Image>, fruit_sprite: Handle<Image>, loc: Vec2) -> impl Bundle {
         (
-            Plant,
+            Plant { fruit_sprite },
+            PlantGrowthState::Empty {
+                seconds_remaining: 6.0,
+            },
             SpriteBundle {
                 texture,
                 transform: Transform::from_xyz(loc.x, loc.y, 0.0),
@@ -95,3 +134,6 @@ impl Plant {
         )
     }
 }
+
+#[derive(Component)]
+pub struct Fruit;
