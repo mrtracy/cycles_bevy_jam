@@ -4,10 +4,17 @@
 // Feel free to delete this line.
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
+use std::time::Duration;
+
 use bevy::asset::AssetMetaCheck;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use bevy_spatial::kdtree::KDTree2;
+use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
+
+#[derive(Component, Default)]
+pub struct SpatialTracked;
 
 fn main() {
     App::new()
@@ -18,18 +25,77 @@ fn main() {
             meta_check: AssetMetaCheck::Never,
             ..default()
         }))
+        .add_plugins(
+            AutomaticUpdate::<SpatialTracked>::new()
+                .with_frequency(Duration::from_secs_f32(0.3))
+                .with_spatial_ds(SpatialStructure::KDTree2)
+                .with_transform(TransformMode::GlobalTransform),
+        )
         .insert_resource(LevelBounds {
             min: vec2(-300.0, -300.0),
             max: vec2(300.0, 300.0),
         })
         .add_systems(Startup, setup)
-        .add_systems(Update, (sys_spawn_on_click, sys_plant_move, sys_plant_grow))
+        .add_systems(
+            Update,
+            (
+                sys_spawn_on_click,
+                sys_plant_move,
+                sys_harvester_look_for_fruit,
+                sys_plant_grow,
+            ),
+        )
+        .observe(obs_fruit_harvested)
         .run();
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn(Harvester::new_bundle(&asset_server, 15));
+    commands.spawn(Harvester::new_bundle(&asset_server, 50));
+}
+
+pub fn sys_harvester_look_for_fruit(
+    mut commands: Commands,
+    spatial_tree: Res<KDTree2<SpatialTracked>>,
+    harvesters: Query<(Entity, &Harvester, &Transform)>,
+    plants: Query<&PlantGrowthState>,
+) {
+    for (harvester_ent, harvester, transform) in harvesters.iter() {
+        for (_, entity) in spatial_tree.within_distance(
+            transform.translation.xy() + vec2(16.0, 16.0),
+            harvester.range_units as f32,
+        ) {
+            let Some(entity) = entity else { continue };
+            let Ok(PlantGrowthState::Fruited) = plants.get(entity) else {
+                continue;
+            };
+            commands.trigger_targets(HarvestFruit { harvester_ent }, entity);
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct HarvestFruit {
+    pub harvester_ent: Entity,
+}
+
+pub fn obs_fruit_harvested(
+    event: Trigger<HarvestFruit>,
+    mut commands: Commands,
+    mut plants: Query<(&PlantAttachedFruit, &mut PlantGrowthState)>,
+) {
+    info!("Triggered fruit harvest");
+    let Ok((attached_fruit, mut growth_state)) = plants.get_mut(event.entity()) else {
+        return;
+    };
+
+    *growth_state = PlantGrowthState::Empty {
+        seconds_remaining: 6.0,
+    };
+    commands.entity(attached_fruit.0).despawn();
+    commands
+        .entity(event.entity())
+        .remove::<PlantAttachedFruit>();
 }
 
 pub fn sys_spawn_on_click(
@@ -102,14 +168,17 @@ pub fn sys_plant_grow(
             } => {
                 *ticks_remaining -= time.delta_seconds();
                 if *ticks_remaining <= 0.0 {
-                    commands.entity(ent).insert(PlantGrowthState::Fruited);
-                    commands
+                    let fruit_id = commands
                         .spawn(SpriteBundle {
                             texture: plant.fruit_sprite.clone(),
                             transform: Transform::from_xyz(2.0, 2.0, 1.0),
                             ..Default::default()
                         })
-                        .set_parent(ent);
+                        .set_parent(ent)
+                        .id();
+                    commands
+                        .entity(ent)
+                        .insert((PlantGrowthState::Fruited, PlantAttachedFruit(fruit_id)));
                 }
             }
             PlantGrowthState::Fruited => (),
@@ -147,6 +216,7 @@ impl Plant {
             PlantGrowthState::Empty {
                 seconds_remaining: 6.0,
             },
+            SpatialTracked,
             SpriteBundle {
                 texture,
                 transform: Transform::from_xyz(loc.x, loc.y, 0.0),
@@ -155,6 +225,9 @@ impl Plant {
         )
     }
 }
+
+#[derive(Component)]
+pub struct PlantAttachedFruit(pub Entity);
 
 #[derive(Component)]
 pub struct Fruit;
