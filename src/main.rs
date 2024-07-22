@@ -5,7 +5,7 @@
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
 use bevy::asset::AssetMetaCheck;
-use bevy::math::vec2;
+use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 
@@ -27,8 +27,9 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
+    commands.spawn(Harvester::new_bundle(&asset_server, 15));
 }
 
 pub fn sys_spawn_on_click(
@@ -36,21 +37,41 @@ pub fn sys_spawn_on_click(
     buttons: Res<ButtonInput<MouseButton>>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
     camera: Query<(&Camera, &GlobalTransform)>,
+    mut harvester: Query<&mut Transform, With<Harvester>>,
     asset_server: Res<AssetServer>,
     bounds: Res<LevelBounds>,
 ) {
+    let get_world_click_pos = || -> Option<Vec2> {
+        let Some(pos) = q_windows
+            .get_single()
+            .ok()
+            .and_then(|w| w.cursor_position())
+        else {
+            return None;
+        };
+        let Ok((camera, gt)) = camera.get_single() else {
+            return None;
+        };
+        camera.viewport_to_world_2d(gt, pos)
+    };
+
     if buttons.just_pressed(MouseButton::Left) {
-        if let Some(pos) = q_windows.single().cursor_position() {
-            if let Ok((camera, gt)) = camera.get_single() {
-                let pos = camera.viewport_to_world_2d(gt, pos).unwrap();
-                if !bounds.in_bounds(pos) {
-                    return;
-                }
+        if let Some(pos) = get_world_click_pos() {
+            if bounds.in_bounds(pos) {
                 commands.spawn(Plant::new_bundle(
                     asset_server.load("plant_base_test.png"),
                     asset_server.load("Crops/Carrot/carrot.png"),
                     pos,
                 ));
+            }
+        }
+    }
+    if buttons.just_pressed(MouseButton::Right) {
+        if let Some(pos) = get_world_click_pos() {
+            if bounds.in_bounds(pos) {
+                let _ = harvester
+                    .get_single_mut()
+                    .map(|mut h| *h = h.with_translation(vec3(pos.x, pos.y, 0.)));
             }
         }
     }
@@ -137,3 +158,20 @@ impl Plant {
 
 #[derive(Component)]
 pub struct Fruit;
+
+#[derive(Component)]
+pub struct Harvester {
+    pub range_units: usize,
+}
+
+impl Harvester {
+    pub fn new_bundle(asset_server: &AssetServer, range_units: usize) -> impl Bundle {
+        (
+            Harvester { range_units },
+            SpriteBundle {
+                texture: asset_server.load("harvester_test.png"),
+                ..Default::default()
+            },
+        )
+    }
+}
