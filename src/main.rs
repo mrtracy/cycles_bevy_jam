@@ -18,16 +18,12 @@ fn main() {
             ..default()
         }))
         .add_systems(Startup, setup)
-        .add_systems(Update, sys_spawn_on_click)
+        .add_systems(Update, (sys_spawn_on_click, sys_plant_move))
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("ducky.png"),
-        ..Default::default()
-    });
 }
 
 pub fn sys_spawn_on_click(
@@ -46,6 +42,15 @@ pub fn sys_spawn_on_click(
                     pos,
                 ));
             }
+        }
+    }
+}
+
+pub fn sys_plant_move(time: Res<Time>, mut plants: Query<&mut Transform, With<Plant>>) {
+    for mut plant_txfm in plants.iter_mut() {
+        plant_txfm.translation -= Vec3::new(50.0 * time.delta_seconds(), 0.0, 0.0);
+        if plant_txfm.translation.x <= -100.0 {
+            plant_txfm.translation.x = 100.0;
         }
     }
 }
