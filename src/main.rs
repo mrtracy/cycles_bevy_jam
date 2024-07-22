@@ -6,6 +6,7 @@
 
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 
 fn main() {
     App::new()
@@ -17,6 +18,7 @@ fn main() {
             ..default()
         }))
         .add_systems(Startup, setup)
+        .add_systems(Update, sys_spawn_on_click)
         .run();
 }
 
@@ -26,4 +28,40 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         texture: asset_server.load("ducky.png"),
         ..Default::default()
     });
+}
+
+pub fn sys_spawn_on_click(
+    mut commands: Commands,
+    buttons: Res<ButtonInput<MouseButton>>,
+    q_windows: Query<&Window, With<PrimaryWindow>>,
+    camera: Query<(&Camera, &GlobalTransform)>,
+    asset_server: Res<AssetServer>,
+) {
+    if buttons.just_pressed(MouseButton::Left) {
+        if let Some(pos) = q_windows.single().cursor_position() {
+            if let Ok((camera, gt)) = camera.get_single() {
+                let pos = camera.viewport_to_world_2d(gt, pos).unwrap();
+                commands.spawn(Plant::new_bundle(
+                    asset_server.load("Crops/Carrot/carrot.png"),
+                    pos,
+                ));
+            }
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct Plant;
+
+impl Plant {
+    fn new_bundle(texture: Handle<Image>, loc: Vec2) -> impl Bundle {
+        (
+            Plant,
+            SpriteBundle {
+                texture,
+                transform: Transform::from_xyz(loc.x, loc.y, 0.0),
+                ..Default::default()
+            },
+        )
+    }
 }
