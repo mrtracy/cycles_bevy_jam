@@ -10,6 +10,7 @@ use bevy::asset::AssetMetaCheck;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use bevy_egui::EguiPlugin;
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
 
@@ -33,6 +34,7 @@ fn main() {
                 .with_spatial_ds(SpatialStructure::KDTree2)
                 .with_transform(TransformMode::GlobalTransform),
         )
+        .add_plugins(EguiPlugin)
         .insert_resource(LevelBounds {
             min: vec2(-300.0, -300.0),
             max: vec2(300.0, 300.0),
@@ -41,6 +43,7 @@ fn main() {
         .add_systems(
             Update,
             (
+                ui::example,
                 sys_spawn_on_click,
                 sys_plant_move,
                 sys_harvester_look_for_fruit,
