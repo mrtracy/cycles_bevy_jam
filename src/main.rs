@@ -13,6 +13,8 @@ use bevy::window::PrimaryWindow;
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
 
+mod ui;
+
 #[derive(Component, Default)]
 pub struct SpatialTracked;
 
