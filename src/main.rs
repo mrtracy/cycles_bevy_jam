@@ -39,11 +39,12 @@ fn main() {
             min: vec2(-300.0, -300.0),
             max: vec2(300.0, 300.0),
         })
+        .insert_resource(Score(0))
         .add_systems(Startup, setup)
         .add_systems(
             Update,
             (
-                ui::example,
+                ui::scoreboard,
                 sys_spawn_on_click,
                 sys_plant_move,
                 sys_harvester_look_for_fruit,
@@ -87,9 +88,14 @@ pub struct HarvestFruit {
     pub harvester_ent: Entity,
 }
 
-pub fn obs_fruit_harvested(event: Trigger<HarvestFruit>, mut commands: Commands) {
+pub fn obs_fruit_harvested(
+    event: Trigger<HarvestFruit>,
+    mut score: ResMut<Score>,
+    mut commands: Commands,
+) {
     info!("Triggered fruit harvest");
 
+    **score += 1;
     commands.entity(event.entity()).insert((
         FruitGrowthState::Empty {
             seconds_remaining: 6.0,
@@ -299,3 +305,6 @@ pub fn sys_harvester_move_to_target(
     transform.translation =
         current_translation.move_towards(harvester.target.extend(0.), 50.0 * time.delta_seconds());
 }
+
+#[derive(Resource, Deref, DerefMut)]
+pub struct Score(usize);
