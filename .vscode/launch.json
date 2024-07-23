@@ -7,17 +7,17 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Run executable 'bevy_github_ci_template'",
+            "name": "Run executable 'bevy_gamejam_fruitstar'",
             "cargo": {
                 "args": [
                     "run",
                     "--features",
                     "bevy/dynamic_linking",
-                    "--bin=bevy_github_ci_template",
-                    "--package=bevy_github_ci_template"
+                    "--bin=bevy_gamejam_fruitstar",
+                    "--package=bevy_gamejam_fruitstar"
                 ],
                 "filter": {
-                    "name": "bevy_github_ci_template",
+                    "name": "bevy_gamejam_fruitstar",
                     "kind": "bin"
                 }
             },
@@ -30,15 +30,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'bevy_github_ci_template'",
+            "name": "Debug executable 'bevy_gamejam_fruitstar'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=bevy_github_ci_template",
-                    "--package=bevy_github_ci_template"
+                    "--bin=bevy_gamejam_fruitstar",
+                    "--package=bevy_gamejam_fruitstar"
                 ],
                 "filter": {
-                    "name": "bevy_github_ci_template",
+                    "name": "bevy_gamejam_fruitstar",
                     "kind": "bin"
                 }
             },
@@ -51,16 +51,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'bevy_github_ci_template'",
+            "name": "Debug unit tests in executable 'bevy_gamejam_fruitstar'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=bevy_github_ci_template",
-                    "--package=bevy_github_ci_template"
+                    "--bin=bevy_gamejam_fruitstar",
+                    "--package=bevy_gamejam_fruitstar"
                 ],
                 "filter": {
-                    "name": "bevy_github_ci_template",
+                    "name": "bevy_gamejam_fruitstar",
                     "kind": "bin"
                 }
             },
