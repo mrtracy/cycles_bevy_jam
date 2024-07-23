@@ -3,6 +3,8 @@
     overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
     libPath = with pkgs; lib.makeLibraryPath [
       # load external libraries that you need in your rust project here
+      libxkbcommon
+      vulkan-loader
     ];
 in
   pkgs.mkShell rec {
@@ -13,6 +15,9 @@ in
       alsa-lib
       # For libudev
       systemd
+      wayland
+      libxkbcommon
+      vulkan-loader
     ];
     nativeBuildInputs = with pkgs; [
       pkg-config
