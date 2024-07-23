@@ -16,6 +16,7 @@ use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMo
 
 mod ui;
 mod fruit;
+mod plant_roots;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
@@ -57,11 +58,11 @@ fn main() {
                 (sys_start_game_on_click).run_if(in_state(GameState::MainMenu)),
                 (
                     sys_spawn_on_click,
-                    sys_plant_move,
+                    plant_roots::sys_plant_move,
                     sys_harvester_look_for_fruit,
                     sys_harvester_target_set,
                     sys_harvester_move_to_target,
-                    sys_plant_fruit_spawn,
+                    plant_roots::sys_plant_fruit_spawn,
                     fruit::sys_fruit_grow,
                     ui::scoreboard,
                 )
@@ -138,43 +139,13 @@ pub fn sys_spawn_on_click(
     if buttons.just_pressed(MouseButton::Left) {
         if let Some(pos) = get_world_click_pos(&q_windows, &camera) {
             if bounds.in_bounds(pos) {
-                commands.spawn(Plant::new_bundle(
+                commands.spawn(plant_roots::Plant::new_bundle(
                     asset_server.load("plant_base_test.png"),
                     asset_server.load("Crops/Carrot/carrot.png"),
                     pos,
                 ));
             }
         }
-    }
-}
-
-pub fn sys_plant_move(
-    time: Res<Time>,
-    bounds: Res<LevelBounds>,
-    mut plants: Query<&mut Transform, With<Plant>>,
-) {
-    for mut plant_txfm in plants.iter_mut() {
-        plant_txfm.translation -= Vec3::new(50.0 * time.delta_seconds(), 0.0, 0.0);
-        if plant_txfm.translation.x <= bounds.min.x {
-            plant_txfm.translation.x = bounds.max.x;
-        }
-    }
-}
-pub fn sys_plant_fruit_spawn(
-    mut commands: Commands,
-    plants: Query<(Entity, &Plant), Without<PlantAttachedFruit>>,
-) {
-    for (plant_ent, plant) in plants.iter() {
-        let fruit_id = commands
-            .spawn(fruit::Fruit::new_bundle(
-                plant.fruit_sprite.clone(),
-                vec2(1.0, 1.0),
-            ))
-            .set_parent(plant_ent)
-            .id();
-        commands
-            .entity(plant_ent)
-            .insert(PlantAttachedFruit(fruit_id));
     }
 }
 
@@ -189,27 +160,6 @@ impl LevelBounds {
         self.min.x < point.x && self.min.y < point.y && self.max.x > point.x && self.max.y > point.y
     }
 }
-
-#[derive(Component)]
-pub struct Plant {
-    pub fruit_sprite: Handle<Image>,
-}
-
-impl Plant {
-    fn new_bundle(texture: Handle<Image>, fruit_sprite: Handle<Image>, loc: Vec2) -> impl Bundle {
-        (
-            Plant { fruit_sprite },
-            SpriteBundle {
-                texture,
-                transform: Transform::from_xyz(loc.x, loc.y, 0.0),
-                ..Default::default()
-            },
-        )
-    }
-}
-
-#[derive(Component)]
-pub struct PlantAttachedFruit(pub Entity);
 
 #[derive(Component)]
 pub struct Harvester {
