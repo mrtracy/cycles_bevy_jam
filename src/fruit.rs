@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::SpatialTracked;
+use crate::{Score, SpatialTracked};
 
 #[derive(Event)]
 pub struct HarvestFruitEvent {
@@ -56,9 +56,14 @@ pub fn sys_fruit_grow(
     }
 }
 
-pub fn obs_fruit_harvested(event: Trigger<HarvestFruitEvent>, mut commands: Commands) {
+pub fn obs_fruit_harvested(
+    event: Trigger<HarvestFruitEvent>,
+    mut score: ResMut<Score>,
+    mut commands: Commands,
+) {
     info!("Triggered fruit harvest");
 
+    **score += 1;
     commands.entity(event.entity()).insert((
         FruitGrowthState::Empty {
             seconds_remaining: 6.0,
