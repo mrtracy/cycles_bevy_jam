@@ -16,6 +16,14 @@ use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMo
 
 mod ui;
 
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum GameState {
+    #[default]
+    MainMenu,
+    Playing,
+    GameOver,
+}
+
 #[derive(Component, Default)]
 pub struct SpatialTracked;
 
@@ -40,27 +48,45 @@ fn main() {
             max: vec2(300.0, 300.0),
         })
         .insert_resource(Score(0))
+        .init_state::<GameState>()
         .add_systems(Startup, setup)
         .add_systems(
             Update,
             (
-                ui::scoreboard,
-                sys_spawn_on_click,
-                sys_plant_move,
-                sys_harvester_look_for_fruit,
-                sys_harvester_target_set,
-                sys_harvester_move_to_target,
-                sys_fruit_spawn,
-                sys_fruit_grow,
+                (sys_start_game_on_click).run_if(in_state(GameState::MainMenu)),
+                (
+                    sys_spawn_on_click,
+                    sys_plant_move,
+                    sys_harvester_look_for_fruit,
+                    sys_harvester_target_set,
+                    sys_harvester_move_to_target,
+                    sys_fruit_spawn,
+                    sys_fruit_grow,
+                    ui::scoreboard,
+                )
+                    .run_if(in_state(GameState::Playing)),
             ),
         )
+        .add_systems(OnEnter(GameState::Playing), setup_game)
         .observe(obs_fruit_harvested)
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
+}
+
+fn setup_game(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Harvester::new_bundle(&asset_server, 50));
+}
+
+pub fn sys_start_game_on_click(
+    buttons: Res<ButtonInput<MouseButton>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if buttons.just_pressed(MouseButton::Left) {
+        next_state.set(GameState::Playing);
+    }
 }
 
 pub fn sys_harvester_look_for_fruit(
