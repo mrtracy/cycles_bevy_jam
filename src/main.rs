@@ -27,7 +27,7 @@ mod fruit_type;
 mod level;
 mod plant_roots;
 mod ui;
-pub mod units;
+mod units;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
@@ -78,6 +78,7 @@ fn main() {
             Update,
             (
                 (ui::main_menu).run_if(in_state(GameState::MainMenu)),
+                sys_draw_border,
                 (
                     sys_spawn_on_click,
                     fruit::sys_fruit_branch_spawn_fruit,
@@ -123,6 +124,13 @@ impl<'w, 's> CameraPointerParam<'w, 's> {
         };
         camera.viewport_to_world_2d(gt, loc.position)
     }
+}
+
+pub fn sys_draw_border(mut gizmos: Gizmos, bounds: Res<LevelBounds>) {
+    gizmos.line_2d(bounds.min, bounds.max.with_y(bounds.min.y), Color::WHITE);
+    gizmos.line_2d(bounds.min, bounds.max.with_x(bounds.min.x), Color::WHITE);
+    gizmos.line_2d(bounds.max, bounds.max.with_y(bounds.min.y), Color::WHITE);
+    gizmos.line_2d(bounds.max, bounds.max.with_x(bounds.min.x), Color::WHITE);
 }
 
 pub fn sys_spawn_on_click(
