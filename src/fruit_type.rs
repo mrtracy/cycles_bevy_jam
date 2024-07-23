@@ -5,6 +5,7 @@ use bevy::{
     render::texture::Image,
 };
 
+#[derive(Debug, PartialEq, Hash)]
 pub enum FruitGenus {
     Carrot,
 }
