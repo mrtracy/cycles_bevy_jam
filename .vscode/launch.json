@@ -7,6 +7,29 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Run executable 'bevy_github_ci_template'",
+            "cargo": {
+                "args": [
+                    "run",
+                    "--features",
+                    "bevy/dynamic_linking",
+                    "--bin=bevy_github_ci_template",
+                    "--package=bevy_github_ci_template"
+                ],
+                "filter": {
+                    "name": "bevy_github_ci_template",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CARGO_MANIFEST_DIR": "${workspaceFolder}",
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug executable 'bevy_github_ci_template'",
             "cargo": {
                 "args": [
@@ -20,7 +43,10 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CARGO_MANIFEST_DIR": "${workspaceFolder}",
+            }
         },
         {
             "type": "lldb",
@@ -39,7 +65,10 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CARGO_MANIFEST_DIR": "${workspaceFolder}",
+            }
         }
     ]
 }
