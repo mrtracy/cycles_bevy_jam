@@ -14,9 +14,9 @@ use bevy_egui::EguiPlugin;
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
 
-mod ui;
 mod fruit;
 mod plant_roots;
+mod ui;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
@@ -55,6 +55,7 @@ fn main() {
         .add_systems(
             Update,
             (
+                sys_draw_border,
                 (sys_start_game_on_click).run_if(in_state(GameState::MainMenu)),
                 (
                     sys_spawn_on_click,
@@ -80,6 +81,13 @@ fn setup(mut commands: Commands) {
 
 fn setup_game(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Harvester::new_bundle(&asset_server, 50));
+}
+
+pub fn sys_draw_border(mut gizmos: Gizmos, bounds: Res<LevelBounds>) {
+    gizmos.line_2d(bounds.min, bounds.max.with_y(bounds.min.y), Color::WHITE);
+    gizmos.line_2d(bounds.min, bounds.max.with_x(bounds.min.x), Color::WHITE);
+    gizmos.line_2d(bounds.max, bounds.max.with_y(bounds.min.y), Color::WHITE);
+    gizmos.line_2d(bounds.max, bounds.max.with_x(bounds.min.x), Color::WHITE);
 }
 
 pub fn sys_start_game_on_click(
