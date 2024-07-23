@@ -42,7 +42,8 @@ fn main() {
                 sys_spawn_on_click,
                 sys_plant_move,
                 sys_harvester_look_for_fruit,
-                sys_plant_grow,
+                sys_fruit_spawn,
+                sys_fruit_grow,
             ),
         )
         .observe(obs_fruit_harvested)
@@ -58,7 +59,7 @@ pub fn sys_harvester_look_for_fruit(
     mut commands: Commands,
     spatial_tree: Res<KDTree2<SpatialTracked>>,
     harvesters: Query<(Entity, &Harvester, &Transform)>,
-    plants: Query<&PlantGrowthState>,
+    fruit: Query<&FruitGrowthState>,
 ) {
     for (harvester_ent, harvester, transform) in harvesters.iter() {
         for (_, entity) in spatial_tree.within_distance(
@@ -66,7 +67,7 @@ pub fn sys_harvester_look_for_fruit(
             harvester.range_units as f32,
         ) {
             let Some(entity) = entity else { continue };
-            let Ok(PlantGrowthState::Fruited) = plants.get(entity) else {
+            let Ok(FruitGrowthState::Fruited) = fruit.get(entity) else {
                 continue;
             };
             commands.trigger_targets(HarvestFruit { harvester_ent }, entity);
@@ -79,23 +80,15 @@ pub struct HarvestFruit {
     pub harvester_ent: Entity,
 }
 
-pub fn obs_fruit_harvested(
-    event: Trigger<HarvestFruit>,
-    mut commands: Commands,
-    mut plants: Query<(&PlantAttachedFruit, &mut PlantGrowthState)>,
-) {
+pub fn obs_fruit_harvested(event: Trigger<HarvestFruit>, mut commands: Commands) {
     info!("Triggered fruit harvest");
-    let Ok((attached_fruit, mut growth_state)) = plants.get_mut(event.entity()) else {
-        return;
-    };
 
-    *growth_state = PlantGrowthState::Empty {
-        seconds_remaining: 6.0,
-    };
-    commands.entity(attached_fruit.0).despawn();
-    commands
-        .entity(event.entity())
-        .remove::<PlantAttachedFruit>();
+    commands.entity(event.entity()).insert((
+        FruitGrowthState::Empty {
+            seconds_remaining: 6.0,
+        },
+        Visibility::Hidden,
+    ));
 }
 
 pub fn sys_spawn_on_click(
@@ -156,32 +149,42 @@ pub fn sys_plant_move(
     }
 }
 
-pub fn sys_plant_grow(
+pub fn sys_fruit_spawn(
+    mut commands: Commands,
+    plants: Query<(Entity, &Plant), Without<PlantAttachedFruit>>,
+) {
+    for (plant_ent, plant) in plants.iter() {
+        let fruit_id = commands
+            .spawn(Fruit::new_bundle(
+                plant.fruit_sprite.clone(),
+                vec2(1.0, 1.0),
+            ))
+            .set_parent(plant_ent)
+            .id();
+        commands
+            .entity(plant_ent)
+            .insert(PlantAttachedFruit(fruit_id));
+    }
+}
+
+pub fn sys_fruit_grow(
     time: Res<Time>,
     mut commands: Commands,
-    mut plants: Query<(Entity, &Plant, &mut PlantGrowthState)>,
+    mut fruits: Query<(Entity, &mut FruitGrowthState)>,
 ) {
-    for (ent, plant, mut growth) in plants.iter_mut() {
+    for (fruit_ent, mut growth) in fruits.iter_mut() {
         match *growth {
-            PlantGrowthState::Empty {
+            FruitGrowthState::Empty {
                 seconds_remaining: ref mut ticks_remaining,
             } => {
                 *ticks_remaining -= time.delta_seconds();
                 if *ticks_remaining <= 0.0 {
-                    let fruit_id = commands
-                        .spawn(SpriteBundle {
-                            texture: plant.fruit_sprite.clone(),
-                            transform: Transform::from_xyz(2.0, 2.0, 1.0),
-                            ..Default::default()
-                        })
-                        .set_parent(ent)
-                        .id();
                     commands
-                        .entity(ent)
-                        .insert((PlantGrowthState::Fruited, PlantAttachedFruit(fruit_id)));
+                        .entity(fruit_ent)
+                        .insert((FruitGrowthState::Fruited, Visibility::Inherited));
                 }
             }
-            PlantGrowthState::Fruited => (),
+            FruitGrowthState::Fruited => (),
         }
     }
 }
@@ -204,7 +207,7 @@ pub struct Plant {
 }
 
 #[derive(Component)]
-pub enum PlantGrowthState {
+pub enum FruitGrowthState {
     Empty { seconds_remaining: f32 },
     Fruited,
 }
@@ -213,10 +216,6 @@ impl Plant {
     fn new_bundle(texture: Handle<Image>, fruit_sprite: Handle<Image>, loc: Vec2) -> impl Bundle {
         (
             Plant { fruit_sprite },
-            PlantGrowthState::Empty {
-                seconds_remaining: 6.0,
-            },
-            SpatialTracked,
             SpriteBundle {
                 texture,
                 transform: Transform::from_xyz(loc.x, loc.y, 0.0),
@@ -231,6 +230,23 @@ pub struct PlantAttachedFruit(pub Entity);
 
 #[derive(Component)]
 pub struct Fruit;
+
+impl Fruit {
+    fn new_bundle(texture: Handle<Image>, loc: Vec2) -> impl Bundle {
+        (
+            SpatialTracked,
+            SpriteBundle {
+                texture,
+                transform: Transform::from_xyz(loc.x, loc.y, 0.0),
+                visibility: Visibility::Hidden,
+                ..Default::default()
+            },
+            FruitGrowthState::Empty {
+                seconds_remaining: 6.0,
+            },
+        )
+    }
+}
 
 #[derive(Component)]
 pub struct Harvester {
