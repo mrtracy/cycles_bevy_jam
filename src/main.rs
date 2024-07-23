@@ -125,7 +125,7 @@ pub fn sys_spawn_on_click(
             }
         }
     }
-    if buttons.just_pressed(MouseButton::Right) {
+    if buttons.pressed(MouseButton::Right) {
         if let Some(pos) = get_world_click_pos() {
             if bounds.in_bounds(pos) {
                 let _ = harvester
