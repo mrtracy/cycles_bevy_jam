@@ -55,9 +55,9 @@ fn main() {
         .add_systems(
             Update,
             (
-                sys_draw_border,
-                (sys_start_game_on_click).run_if(in_state(GameState::MainMenu)),
+                (ui::main_menu).run_if(in_state(GameState::MainMenu)),
                 (
+                    sys_draw_border,
                     sys_spawn_on_click,
                     plant_roots::sys_plant_move,
                     sys_harvester_look_for_fruit,
@@ -88,15 +88,6 @@ pub fn sys_draw_border(mut gizmos: Gizmos, bounds: Res<LevelBounds>) {
     gizmos.line_2d(bounds.min, bounds.max.with_x(bounds.min.x), Color::WHITE);
     gizmos.line_2d(bounds.max, bounds.max.with_y(bounds.min.y), Color::WHITE);
     gizmos.line_2d(bounds.max, bounds.max.with_x(bounds.min.x), Color::WHITE);
-}
-
-pub fn sys_start_game_on_click(
-    buttons: Res<ButtonInput<MouseButton>>,
-    mut next_state: ResMut<NextState<GameState>>,
-) {
-    if buttons.just_pressed(MouseButton::Left) {
-        next_state.set(GameState::Playing);
-    }
 }
 
 pub fn sys_harvester_look_for_fruit(
