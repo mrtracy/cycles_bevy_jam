@@ -1,6 +1,6 @@
-use bevy::{math::vec2, prelude::*};
+use bevy::prelude::*;
 
-use crate::{fruit, fruit_type::FruitGenus, LevelBounds};
+use crate::{fruit_type::FruitGenus, LevelBounds};
 
 #[derive(Component)]
 pub struct Plant {
@@ -35,22 +35,3 @@ pub fn sys_plant_move(
         }
     }
 }
-
-pub fn sys_plant_fruit_spawn(
-    mut commands: Commands,
-    plants: Query<Entity, (With<Plant>, Without<PlantAttachedFruit>)>,
-) {
-    for plant_ent in plants.iter() {
-        let fruit_id = commands
-            .spawn(fruit::Fruit::new_bundle(0, vec2(1.0, 1.0)))
-            .set_parent(plant_ent)
-            .id();
-        commands
-            .entity(plant_ent)
-            .insert(PlantAttachedFruit(fruit_id));
-    }
-}
-
-#[derive(Component)]
-#[allow(dead_code)]
-pub struct PlantAttachedFruit(pub Entity);

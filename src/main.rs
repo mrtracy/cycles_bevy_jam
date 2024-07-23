@@ -13,6 +13,7 @@ use bevy::window::PrimaryWindow;
 use bevy_egui::EguiPlugin;
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
+use fruit::{FruitBranch, FruitBranchBundle};
 use fruit_type::FruitSpeciesPlugin;
 
 mod fruit;
@@ -66,7 +67,7 @@ fn main() {
                     sys_harvester_look_for_fruit,
                     sys_harvester_target_set,
                     sys_harvester_move_to_target,
-                    plant_roots::sys_plant_fruit_spawn,
+                    fruit::sys_fruit_branch_spawn_fruit,
                     fruit::sys_fruit_grow,
                     ui::scoreboard,
                 )
@@ -141,10 +142,19 @@ pub fn sys_spawn_on_click(
     if buttons.just_pressed(MouseButton::Left) {
         if let Some(pos) = get_world_click_pos(&q_windows, &camera) {
             if bounds.in_bounds(pos) {
-                commands.spawn(plant_roots::Plant::new_bundle(
-                    asset_server.load("plant_base_test.png"),
-                    pos,
-                ));
+                commands
+                    .spawn(plant_roots::Plant::new_bundle(
+                        asset_server.load("plant_base_test.png"),
+                        pos,
+                    ))
+                    .with_children(|child_commands| {
+                        child_commands.spawn(FruitBranchBundle {
+                            branch: FruitBranch { species: 0 },
+                            sprite: SpriteBundle {
+                                ..Default::default()
+                            },
+                        });
+                    });
             }
         }
     }

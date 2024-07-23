@@ -1,11 +1,37 @@
-use bevy::prelude::*;
+use bevy::{math::vec2, prelude::*};
 
 use crate::{fruit_type::FruitSpeciesMap, SpatialTracked};
 
-#[derive(Event)]
-pub struct HarvestFruitEvent {
+#[derive(Component)]
+pub struct FruitBranch {
+    pub species: usize,
+}
+
+#[derive(Component)]
+pub enum FruitBranchAttachment {
     #[allow(dead_code)]
-    pub harvester_ent: Entity,
+    Fruit(Entity),
+}
+
+#[derive(Bundle)]
+pub struct FruitBranchBundle {
+    pub branch: FruitBranch,
+    pub sprite: SpriteBundle,
+}
+
+pub fn sys_fruit_branch_spawn_fruit(
+    mut commands: Commands,
+    plants: Query<(Entity, &FruitBranch), Without<FruitBranchAttachment>>,
+) {
+    for (branch_ent, branch) in plants.iter() {
+        let fruit_id = commands
+            .spawn(Fruit::new_bundle(branch.species, vec2(1.0, 1.0)))
+            .set_parent(branch_ent)
+            .id();
+        commands
+            .entity(branch_ent)
+            .insert(FruitBranchAttachment::Fruit(fruit_id));
+    }
 }
 
 #[derive(Component)]
@@ -15,7 +41,7 @@ pub struct Fruit {
 
 #[derive(Component)]
 pub enum FruitGrowthState {
-    Empty { seconds_of_growth: f32 },
+    Bud { seconds_of_growth: f32 },
     Fruited,
 }
 
@@ -28,7 +54,7 @@ impl Fruit {
                 ..Default::default()
             },
             Fruit { fruit_type },
-            FruitGrowthState::Empty {
+            FruitGrowthState::Bud {
                 seconds_of_growth: 0.0,
             },
         )
@@ -47,7 +73,7 @@ pub fn sys_fruit_grow(
             .get(fruit.fruit_type)
             .expect(&format!("Unknown fruit type {}", fruit.fruit_type));
         match *growth {
-            FruitGrowthState::Empty {
+            FruitGrowthState::Bud {
                 ref mut seconds_of_growth,
             } => {
                 *seconds_of_growth += time.delta_seconds();
@@ -62,17 +88,26 @@ pub fn sys_fruit_grow(
     }
 }
 
+#[derive(Event)]
+pub struct HarvestFruitEvent {
+    #[allow(dead_code)]
+    pub harvester_ent: Entity,
+}
+
 pub fn obs_fruit_harvested(
     event: Trigger<HarvestFruitEvent>,
     mut score: ResMut<super::Score>,
     mut commands: Commands,
+    fruit_query: Query<&Parent, With<Fruit>>,
 ) {
-    info!("Triggered fruit harvest");
+    let target_fruit = event.entity();
+    let Ok(parent_branch_ent) = fruit_query.get(event.entity()) else {
+        return;
+    };
+
     score.0 += 1;
+    commands.entity(target_fruit).despawn();
     commands
-        .entity(event.entity())
-        .insert((FruitGrowthState::Empty {
-            seconds_of_growth: 0.0,
-        },))
-        .remove::<Handle<Image>>();
+        .entity(parent_branch_ent.get())
+        .remove::<FruitBranchAttachment>();
 }
