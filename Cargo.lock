@@ -551,6 +551,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_gamejam_fruitstar"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_spatial",
+]
+
+[[package]]
 name = "bevy_gilrs"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -563,14 +571,6 @@ dependencies = [
  "bevy_utils",
  "gilrs",
  "thiserror",
-]
-
-[[package]]
-name = "bevy_github_ci_template"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_spatial",
 ]
 
 [[package]]
