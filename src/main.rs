@@ -11,10 +11,15 @@ use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiPlugin;
+use bevy_mod_picking::events::Pointer;
+use bevy_mod_picking::prelude::On;
+use bevy_mod_picking::selection::{Select, SelectionPluginSettings};
+use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle};
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
 use fruit::{FruitBranch, FruitBranchBundle};
 use fruit_type::FruitSpeciesPlugin;
+use ui::CurrentInspectedUnit;
 
 mod fruit;
 mod fruit_type;
@@ -47,6 +52,11 @@ fn main() {
                 .with_spatial_ds(SpatialStructure::KDTree2)
                 .with_transform(TransformMode::GlobalTransform),
         )
+        .add_plugins(DefaultPickingPlugins)
+        .insert_resource(SelectionPluginSettings {
+            use_multiselect_default_inputs: false,
+            ..Default::default()
+        })
         .add_plugins(EguiPlugin)
         .add_plugins(FruitSpeciesPlugin)
         .insert_resource(LevelBounds {
@@ -54,6 +64,7 @@ fn main() {
             max: vec2(300.0, 300.0),
         })
         .insert_resource(Score(0))
+        .insert_resource(CurrentInspectedUnit::None)
         .init_state::<GameState>()
         .add_systems(Startup, setup)
         .add_systems(
@@ -70,6 +81,8 @@ fn main() {
                     fruit::sys_fruit_branch_spawn_fruit,
                     fruit::sys_fruit_grow,
                     ui::scoreboard,
+                    ui::sys_selected_unit_ui
+                        .run_if(not(resource_equals(CurrentInspectedUnit::None))),
                 )
                     .run_if(in_state(GameState::Playing)),
             ),
@@ -189,6 +202,10 @@ impl Harvester {
                 texture: asset_server.load("harvester_test.png"),
                 ..Default::default()
             },
+            PickableBundle::default(),
+            On::<Pointer<Select>>::commands_mut(|event, commands| {
+                commands.insert_resource(CurrentInspectedUnit::Harvester(event.target));
+            }),
         )
     }
 }
