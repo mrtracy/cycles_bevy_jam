@@ -13,8 +13,10 @@ use bevy::window::PrimaryWindow;
 use bevy_egui::EguiPlugin;
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
+use fruit_type::FruitSpeciesPlugin;
 
 mod fruit;
+mod fruit_type;
 mod plant_roots;
 mod ui;
 
@@ -45,6 +47,7 @@ fn main() {
                 .with_transform(TransformMode::GlobalTransform),
         )
         .add_plugins(EguiPlugin)
+        .add_plugins(FruitSpeciesPlugin)
         .insert_resource(LevelBounds {
             min: vec2(-300.0, -300.0),
             max: vec2(300.0, 300.0),
@@ -140,7 +143,6 @@ pub fn sys_spawn_on_click(
             if bounds.in_bounds(pos) {
                 commands.spawn(plant_roots::Plant::new_bundle(
                     asset_server.load("plant_base_test.png"),
-                    asset_server.load("Crops/Carrot/carrot.png"),
                     pos,
                 ));
             }

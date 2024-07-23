@@ -1,20 +1,19 @@
 use bevy::{math::vec2, prelude::*};
 
-use crate::{fruit, LevelBounds};
+use crate::{fruit, fruit_type::FruitGenus, LevelBounds};
 
 #[derive(Component)]
 pub struct Plant {
-    pub fruit_sprite: Handle<Image>,
+    #[allow(dead_code)]
+    pub genus: FruitGenus,
 }
 
 impl Plant {
-    pub fn new_bundle(
-        texture: Handle<Image>,
-        fruit_sprite: Handle<Image>,
-        loc: Vec2,
-    ) -> impl Bundle {
+    pub fn new_bundle(texture: Handle<Image>, loc: Vec2) -> impl Bundle {
         (
-            Plant { fruit_sprite },
+            Plant {
+                genus: FruitGenus::Carrot,
+            },
             SpriteBundle {
                 texture,
                 transform: Transform::from_xyz(loc.x, loc.y, 0.0),
@@ -39,14 +38,11 @@ pub fn sys_plant_move(
 
 pub fn sys_plant_fruit_spawn(
     mut commands: Commands,
-    plants: Query<(Entity, &Plant), Without<PlantAttachedFruit>>,
+    plants: Query<Entity, (With<Plant>, Without<PlantAttachedFruit>)>,
 ) {
-    for (plant_ent, plant) in plants.iter() {
+    for plant_ent in plants.iter() {
         let fruit_id = commands
-            .spawn(fruit::Fruit::new_bundle(
-                plant.fruit_sprite.clone(),
-                vec2(1.0, 1.0),
-            ))
+            .spawn(fruit::Fruit::new_bundle(0, vec2(1.0, 1.0)))
             .set_parent(plant_ent)
             .id();
         commands

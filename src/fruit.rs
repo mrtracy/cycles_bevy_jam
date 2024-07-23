@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::SpatialTracked;
+use crate::{fruit_type::FruitSpeciesMap, SpatialTracked};
 
 #[derive(Event)]
 pub struct HarvestFruitEvent {
@@ -9,26 +9,27 @@ pub struct HarvestFruitEvent {
 }
 
 #[derive(Component)]
-pub struct Fruit;
+pub struct Fruit {
+    fruit_type: usize,
+}
 
 #[derive(Component)]
 pub enum FruitGrowthState {
-    Empty { seconds_remaining: f32 },
+    Empty { seconds_of_growth: f32 },
     Fruited,
 }
 
 impl Fruit {
-    pub fn new_bundle(texture: Handle<Image>, loc: Vec2) -> impl Bundle {
+    pub fn new_bundle(fruit_type: usize, loc: Vec2) -> impl Bundle {
         (
             SpatialTracked,
             SpriteBundle {
-                texture,
                 transform: Transform::from_xyz(loc.x, loc.y, 0.0),
-                visibility: Visibility::Hidden,
                 ..Default::default()
             },
+            Fruit { fruit_type },
             FruitGrowthState::Empty {
-                seconds_remaining: 6.0,
+                seconds_of_growth: 0.0,
             },
         )
     }
@@ -37,18 +38,23 @@ impl Fruit {
 pub fn sys_fruit_grow(
     time: Res<Time>,
     mut commands: Commands,
-    mut fruits: Query<(Entity, &mut FruitGrowthState)>,
+    mut fruits: Query<(Entity, &Fruit, &mut FruitGrowthState)>,
+    fruit_map: Res<FruitSpeciesMap>,
 ) {
-    for (fruit_ent, mut growth) in fruits.iter_mut() {
+    for (fruit_ent, fruit, mut growth) in fruits.iter_mut() {
+        let fruit_type = fruit_map
+            .species_vector
+            .get(fruit.fruit_type)
+            .expect(&format!("Unknown fruit type {}", fruit.fruit_type));
         match *growth {
             FruitGrowthState::Empty {
-                seconds_remaining: ref mut ticks_remaining,
+                ref mut seconds_of_growth,
             } => {
-                *ticks_remaining -= time.delta_seconds();
-                if *ticks_remaining <= 0.0 {
+                *seconds_of_growth += time.delta_seconds();
+                if *seconds_of_growth >= fruit_type.growth_time_secs {
                     commands
                         .entity(fruit_ent)
-                        .insert((FruitGrowthState::Fruited, Visibility::Inherited));
+                        .insert((FruitGrowthState::Fruited, fruit_type.fruit_image.clone()));
                 }
             }
             FruitGrowthState::Fruited => (),
@@ -63,10 +69,10 @@ pub fn obs_fruit_harvested(
 ) {
     info!("Triggered fruit harvest");
     score.0 += 1;
-    commands.entity(event.entity()).insert((
-        FruitGrowthState::Empty {
-            seconds_remaining: 6.0,
-        },
-        Visibility::Hidden,
-    ));
+    commands
+        .entity(event.entity())
+        .insert((FruitGrowthState::Empty {
+            seconds_of_growth: 0.0,
+        },))
+        .remove::<Handle<Image>>();
 }
