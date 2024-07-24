@@ -1,10 +1,16 @@
+use std::any::TypeId;
+
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, Align, Align2, Layout, RichText},
     EguiContexts,
 };
 
-use crate::{plant_roots::Plant, GameState, Harvester, Score};
+use crate::{
+    buildings::{BuildingTypeMap, DebugPlantType, HarvesterType},
+    plant_roots::Plant,
+    GameState, Harvester, Score,
+};
 
 pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
     egui::CentralPanel::default()
@@ -29,6 +35,7 @@ pub fn scoreboard(
     mut contexts: EguiContexts,
     mut score: ResMut<Score>,
     mut next_state: ResMut<NextState<GameState>>,
+    buildings: Res<BuildingTypeMap>,
 ) {
     let score_label = format!("Score: {}", score.to_string());
     egui::Window::new("Fruitstar")
@@ -47,22 +54,22 @@ pub fn scoreboard(
             ui.menu_button("+", |ui| {
                 if ui.button("Harvester").clicked() {
                     commands.insert_resource(CurrentInspectedUnit::Prospective(
-                        BuildableUnit::Harvester,
+                        *buildings
+                            .type_map
+                            .get(&TypeId::of::<HarvesterType>())
+                            .unwrap(),
                     ))
                 }
-                if ui.button("Debug Plant").clicked() {
+                if ui.button("DebugPlant").clicked() {
                     commands.insert_resource(CurrentInspectedUnit::Prospective(
-                        BuildableUnit::DebugPlant,
+                        *buildings
+                            .type_map
+                            .get(&TypeId::of::<DebugPlantType>())
+                            .unwrap(),
                     ))
                 }
             });
         });
-}
-
-#[derive(PartialEq, Debug)]
-pub enum BuildableUnit {
-    Harvester,
-    DebugPlant,
 }
 
 #[derive(Resource, Default, PartialEq)]
@@ -71,7 +78,7 @@ pub enum CurrentInspectedUnit {
     None,
     Tree(Entity),
     Harvester(Entity),
-    Prospective(BuildableUnit),
+    Prospective(Entity),
 }
 
 pub fn sys_selected_unit_ui(

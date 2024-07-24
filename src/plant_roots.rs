@@ -10,16 +10,13 @@ pub struct Plant {
 }
 
 impl Plant {
-    pub fn new_bundle(texture: Handle<Image>, loc: Vec2) -> impl Bundle {
+    pub fn new_bundle(texture: Handle<Image>) -> impl Bundle {
         (
             Plant {
                 genus: FruitGenus::Carrot,
             },
-            SpriteBundle {
-                texture,
-                transform: Transform::from_xyz(loc.x, loc.y, 0.0),
-                ..Default::default()
-            },
+            texture,
+            Sprite::default(),
             PickableBundle::default(),
             On::<Pointer<Select>>::commands_mut(|event, commands| {
                 commands.insert_resource(CurrentInspectedUnit::Tree(event.target));
