@@ -25,6 +25,7 @@ pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<Ga
 }
 
 pub fn scoreboard(
+    mut commands: Commands,
     mut contexts: EguiContexts,
     mut score: ResMut<Score>,
     mut next_state: ResMut<NextState<GameState>>,
@@ -43,7 +44,25 @@ pub fn scoreboard(
             if ui.button("End").clicked() {
                 next_state.set(GameState::GameOver);
             }
+            ui.menu_button("+", |ui| {
+                if ui.button("Harvester").clicked() {
+                    commands.insert_resource(CurrentInspectedUnit::Prospective(
+                        BuildableUnit::Harvester,
+                    ))
+                }
+                if ui.button("Debug Plant").clicked() {
+                    commands.insert_resource(CurrentInspectedUnit::Prospective(
+                        BuildableUnit::DebugPlant,
+                    ))
+                }
+            });
         });
+}
+
+#[derive(PartialEq, Debug)]
+pub enum BuildableUnit {
+    Harvester,
+    DebugPlant,
 }
 
 #[derive(Resource, Default, PartialEq)]
@@ -52,6 +71,7 @@ pub enum CurrentInspectedUnit {
     None,
     Tree(Entity),
     Harvester(Entity),
+    Prospective(BuildableUnit),
 }
 
 pub fn sys_selected_unit_ui(
@@ -86,6 +106,16 @@ pub fn sys_selected_unit_ui(
                 .resizable(false)
                 .show(contexts.ctx_mut(), |ui| {
                     ui.label(format!("Harvester, range: {}", harvester.range_units));
+                });
+        }
+        CurrentInspectedUnit::Prospective(ref bu) => {
+            egui::Window::new("Place Unit")
+                .collapsible(false)
+                .anchor(Align2::LEFT_BOTTOM, egui::vec2(0.0, 0.0))
+                .interactable(false)
+                .resizable(false)
+                .show(contexts.ctx_mut(), |ui| {
+                    ui.label(format!("{:?}", bu));
                 });
         }
     }
