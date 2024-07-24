@@ -1,15 +1,15 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
+use bevy_mod_picking::pointer::PointerId;
 
-use crate::{get_world_click_pos, ui::CurrentInspectedUnit, LevelBounds};
+use crate::{ui::CurrentInspectedUnit, CameraPointerParam, LevelBounds};
 
 #[derive(Component)]
 pub struct BuildingPreview;
 
 pub fn sys_hover_building_effect(
     mut commands: Commands,
+    pointers: CameraPointerParam,
     current_inspector: Res<CurrentInspectedUnit>,
-    q_windows: Query<&Window, With<PrimaryWindow>>,
-    camera: Query<(&Camera, &GlobalTransform)>,
     bounds: Res<LevelBounds>,
     asset_server: Res<AssetServer>,
     mut building_preview_query: Query<(Entity, &mut Transform), With<BuildingPreview>>,
@@ -21,7 +21,7 @@ pub fn sys_hover_building_effect(
         return;
     };
 
-    let Some(pos) = get_world_click_pos(&q_windows, &camera) else {
+    let Some(pos) = pointers.get_world_pointer_location(PointerId::Mouse) else {
         return;
     };
     if !bounds.in_bounds(pos) {
