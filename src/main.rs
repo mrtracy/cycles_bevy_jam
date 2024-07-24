@@ -7,11 +7,12 @@
 use std::time::Duration;
 
 use bevy::asset::AssetMetaCheck;
+use bevy::ecs::system::SystemParam;
 use bevy::math::vec2;
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
 use bevy_egui::EguiPlugin;
 use bevy_mod_picking::events::Pointer;
+use bevy_mod_picking::pointer::{InputPress, PointerButton, PointerId, PointerLocation};
 use bevy_mod_picking::prelude::On;
 use bevy_mod_picking::selection::{Select, SelectionPluginSettings};
 use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle};
@@ -130,57 +131,68 @@ pub fn sys_harvester_look_for_fruit(
     }
 }
 
-pub fn get_world_click_pos(
-    q_windows: &Query<&Window, With<PrimaryWindow>>,
-    camera: &Query<(&Camera, &GlobalTransform)>,
-) -> Option<Vec2> {
-    let Some(pos) = q_windows
-        .get_single()
-        .ok()
-        .and_then(|w| w.cursor_position())
-    else {
-        return None;
-    };
-    let Ok((camera, gt)) = camera.get_single() else {
-        return None;
-    };
-    camera.viewport_to_world_2d(gt, pos)
+#[derive(SystemParam)]
+pub struct CameraPointerParam<'w, 's> {
+    pub pointers: Query<'w, 's, (&'static PointerId, &'static PointerLocation)>,
+    pub cameras: Query<'w, 's, (&'static Camera, &'static GlobalTransform)>,
+}
+
+impl<'w, 's> CameraPointerParam<'w, 's> {
+    pub fn get_world_pointer_location(&self, pointer_id: PointerId) -> Option<Vec2> {
+        let Some((
+            _,
+            PointerLocation {
+                location: Some(loc),
+            },
+        )) = self.pointers.iter().find(|(pid, _)| **pid == pointer_id)
+        else {
+            return None;
+        };
+        let Ok((camera, gt)) = self.cameras.get_single() else {
+            return None;
+        };
+        camera.viewport_to_world_2d(gt, loc.position)
+    }
 }
 
 pub fn sys_spawn_on_click(
     mut commands: Commands,
+    mut press_events: EventReader<InputPress>,
+    pointers: CameraPointerParam,
     current_inspector: Res<CurrentInspectedUnit>,
-    buttons: Res<ButtonInput<MouseButton>>,
-    q_windows: Query<&Window, With<PrimaryWindow>>,
-    camera: Query<(&Camera, &GlobalTransform)>,
     asset_server: Res<AssetServer>,
     bounds: Res<LevelBounds>,
 ) {
-    if buttons.just_pressed(MouseButton::Left) {
+    for press in press_events
+        .read()
+        .filter(|p| p.is_just_down(PointerButton::Primary))
+    {
+        let Some(pos) = pointers.get_world_pointer_location(press.pointer_id) else {
+            continue;
+        };
         match *current_inspector {
             CurrentInspectedUnit::Prospective(ref building) => {
-                if let Some(pos) = get_world_click_pos(&q_windows, &camera) {
-                    if bounds.in_bounds(pos) {
-                        match building {
-                            ui::BuildableUnit::Harvester => {}
-                            ui::BuildableUnit::DebugPlant => {
-                                commands
-                                    .spawn(plant_roots::Plant::new_bundle(
-                                        asset_server.load("plant_base_test.png"),
-                                        pos,
-                                    ))
-                                    .with_children(|child_commands| {
-                                        child_commands.spawn(FruitBranchBundle {
-                                            branch: FruitBranch { species: 0 },
-                                            sprite: SpriteBundle {
-                                                ..Default::default()
-                                            },
-                                        });
+                info!("Prospective building click");
+                if bounds.in_bounds(pos) {
+                    match building {
+                        ui::BuildableUnit::Harvester => {}
+                        ui::BuildableUnit::DebugPlant => {
+                            commands
+                                .spawn(plant_roots::Plant::new_bundle(
+                                    asset_server.load("plant_base_test.png"),
+                                    pos,
+                                ))
+                                .with_children(|child_commands| {
+                                    child_commands.spawn(FruitBranchBundle {
+                                        branch: FruitBranch { species: 0 },
+                                        sprite: SpriteBundle {
+                                            ..Default::default()
+                                        },
                                     });
-                            }
+                                });
                         }
-                        commands.insert_resource(CurrentInspectedUnit::None);
                     }
+                    commands.insert_resource(CurrentInspectedUnit::None);
                 }
             }
             _ => {}
@@ -226,22 +238,25 @@ impl Harvester {
 }
 
 pub fn sys_harvester_target_set(
-    buttons: Res<ButtonInput<MouseButton>>,
-    q_windows: Query<&Window, With<PrimaryWindow>>,
-    camera: Query<(&Camera, &GlobalTransform)>,
+    mut press_events: EventReader<InputPress>,
+    pointers: CameraPointerParam,
     mut harvester: Query<(&Transform, &mut Harvester)>,
     bounds: Res<LevelBounds>,
     mut gizmos: Gizmos,
 ) {
-    if buttons.pressed(MouseButton::Right) {
-        if let Some(pos) = get_world_click_pos(&q_windows, &camera) {
-            if bounds.in_bounds(pos) {
-                harvester
-                    .get_single_mut()
-                    .map(|(_, mut h)| h.as_mut().target = vec2(pos.x, pos.y))
-                    .expect("Failed to update target");
-                gizmos.arrow_2d(harvester.single().0.translation.xy(), pos, Color::WHITE);
-            }
+    for press in press_events
+        .read()
+        .filter(|p| p.is_just_down(PointerButton::Secondary))
+    {
+        let Some(pos) = pointers.get_world_pointer_location(press.pointer_id) else {
+            continue;
+        };
+        if bounds.in_bounds(pos) {
+            harvester
+                .get_single_mut()
+                .map(|(_, mut h)| h.as_mut().target = vec2(pos.x, pos.y))
+                .expect("Failed to update target");
+            gizmos.arrow_2d(harvester.single().0.translation.xy(), pos, Color::WHITE);
         }
     }
 }
