@@ -18,8 +18,8 @@ use bevy_mod_picking::selection::{Select, SelectionPluginSettings};
 use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle};
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
+use buildings::BuildingTypePlugin;
 use construction_preview::BuildingPreviewPlugin;
-use fruit::{FruitBranch, FruitBranchBundle};
 use fruit_type::FruitSpeciesPlugin;
 use ui::CurrentInspectedUnit;
 
@@ -61,6 +61,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(EguiPlugin)
+        .add_plugins(BuildingTypePlugin)
         .add_plugins(FruitSpeciesPlugin)
         .add_plugins(BuildingPreviewPlugin)
         .insert_resource(LevelBounds {
@@ -80,8 +81,8 @@ fn main() {
                     sys_spawn_on_click,
                     plant_roots::sys_plant_move,
                     sys_harvester_look_for_fruit,
-                    sys_harvester_target_set,
-                    sys_harvester_move_to_target,
+                    // sys_harvester_target_set,
+                    // sys_harvester_move_to_target,
                     fruit::sys_fruit_branch_spawn_fruit,
                     fruit::sys_fruit_grow,
                     ui::scoreboard,
@@ -160,8 +161,8 @@ pub fn sys_spawn_on_click(
     mut press_events: EventReader<InputPress>,
     pointers: CameraPointerParam,
     current_inspector: Res<CurrentInspectedUnit>,
-    asset_server: Res<AssetServer>,
     bounds: Res<LevelBounds>,
+    building_data: Query<(&buildings::SpriteData, &buildings::BuildingType)>,
 ) {
     for press in press_events
         .read()
@@ -174,24 +175,18 @@ pub fn sys_spawn_on_click(
             CurrentInspectedUnit::Prospective(ref building) => {
                 info!("Prospective building click");
                 if bounds.in_bounds(pos) {
-                    match building {
-                        ui::BuildableUnit::Harvester => {}
-                        ui::BuildableUnit::DebugPlant => {
-                            commands
-                                .spawn(plant_roots::Plant::new_bundle(
-                                    asset_server.load("plant_base_test.png"),
-                                    pos,
-                                ))
-                                .with_children(|child_commands| {
-                                    child_commands.spawn(FruitBranchBundle {
-                                        branch: FruitBranch { species: 0 },
-                                        sprite: SpriteBundle {
-                                            ..Default::default()
-                                        },
-                                    });
-                                });
-                        }
-                    }
+                    let Ok((_, building_type)) = building_data.get(*building) else {
+                        info!("Propective building type was not found");
+                        continue;
+                    };
+                    let new_entity = commands
+                        .spawn(SpatialBundle {
+                            transform: Transform::from_xyz(pos.x, pos.y, 0.),
+                            ..Default::default()
+                        })
+                        .id();
+
+                    commands.run_system_with_input(building_type.constructor_system_id, new_entity);
                     commands.insert_resource(CurrentInspectedUnit::None);
                 }
             }
@@ -225,10 +220,8 @@ impl Harvester {
                 range_units,
                 target: vec2(0., 0.),
             },
-            SpriteBundle {
-                texture: asset_server.load("harvester_test.png"),
-                ..Default::default()
-            },
+            asset_server.load::<Image>("harvester_test.png"),
+            Sprite::default(),
             PickableBundle::default(),
             On::<Pointer<Select>>::commands_mut(|event, commands| {
                 commands.insert_resource(CurrentInspectedUnit::Harvester(event.target));
@@ -273,3 +266,109 @@ pub fn sys_harvester_move_to_target(
 
 #[derive(Resource, Deref, DerefMut)]
 pub struct Score(usize);
+
+pub mod buildings {
+    use std::any::TypeId;
+    use std::borrow::Cow;
+
+    use bevy::{ecs::system::SystemId, prelude::*, utils::HashMap};
+
+    use crate::{
+        fruit::{FruitBranch, FruitBranchBundle},
+        plant_roots, Harvester,
+    };
+
+    #[derive(Component)]
+    pub struct SpriteData {
+        pub primary_sprite: Handle<Image>,
+    }
+
+    #[derive(Component)]
+    pub struct BuildingType {
+        pub name: Cow<'static, str>,
+        pub constructor_system_id: SystemId<Entity, ()>,
+    }
+
+    #[derive(Resource, Default)]
+    pub struct BuildingTypeMap {
+        pub type_map: HashMap<TypeId, Entity>,
+    }
+
+    pub struct HarvesterType;
+
+    impl HarvesterType {
+        pub const SPRITE_PATH: &'static str = "harvester_test.png";
+        pub const NAME: &'static str = "Harvester";
+        pub fn constructor(
+            In(target): In<Entity>,
+            mut commands: Commands,
+            asset_server: Res<AssetServer>,
+        ) {
+            commands
+                .entity(target)
+                .insert(Harvester::new_bundle(&asset_server, 50));
+        }
+    }
+
+    pub struct DebugPlantType;
+
+    impl DebugPlantType {
+        pub const SPRITE_PATH: &'static str = "plant_base_test.png";
+        pub const NAME: &'static str = "Debug Roots";
+        pub fn constructor(
+            In(target): In<Entity>,
+            mut commands: Commands,
+            asset_server: Res<AssetServer>,
+        ) {
+            commands
+                .entity(target)
+                .insert(plant_roots::Plant::new_bundle(
+                    asset_server.load("plant_base_test.png"),
+                ))
+                .with_children(|child_commands| {
+                    child_commands.spawn(FruitBranchBundle {
+                        branch: FruitBranch { species: 0 },
+                        sprite: SpriteBundle {
+                            ..Default::default()
+                        },
+                    });
+                });
+        }
+    }
+
+    pub fn sys_setup_building_types(world: &mut World) {
+        let mut building_map = BuildingTypeMap::default();
+        let asset_server = world.get_resource::<AssetServer>().unwrap().clone();
+        macro_rules! register_type {
+            ($desc:ident) => {
+                let constructor_system_id = world.register_system($desc::constructor);
+                let build_type_id = world
+                    .spawn((
+                        BuildingType {
+                            name: <$desc>::NAME.into(),
+                            constructor_system_id,
+                        },
+                        SpriteData {
+                            primary_sprite: asset_server.load($desc::SPRITE_PATH),
+                        },
+                    ))
+                    .id();
+                building_map
+                    .type_map
+                    .insert(TypeId::of::<$desc>(), build_type_id);
+            };
+        }
+
+        register_type!(HarvesterType);
+        register_type!(DebugPlantType);
+        world.insert_resource(building_map);
+    }
+
+    pub struct BuildingTypePlugin;
+
+    impl Plugin for BuildingTypePlugin {
+        fn build(&self, app: &mut App) {
+            app.add_systems(Startup, sys_setup_building_types);
+        }
+    }
+}
