@@ -21,7 +21,7 @@ use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMo
 use buildings::BuildingTypePlugin;
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
-use ui::CurrentInspectedUnit;
+use ui::CurrentIntention;
 
 mod construction_preview;
 mod fruit;
@@ -69,7 +69,7 @@ fn main() {
             max: vec2(300.0, 300.0),
         })
         .insert_resource(Score(0))
-        .insert_resource(CurrentInspectedUnit::None)
+        .insert_resource(CurrentIntention::None)
         .init_state::<GameState>()
         .add_systems(Startup, setup)
         .add_systems(
@@ -87,7 +87,7 @@ fn main() {
                     fruit::sys_fruit_grow,
                     ui::scoreboard,
                     ui::sys_selected_unit_ui
-                        .run_if(not(resource_equals(CurrentInspectedUnit::None))),
+                        .run_if(not(resource_equals(CurrentIntention::None))),
                 )
                     .run_if(in_state(GameState::Playing)),
             ),
@@ -160,7 +160,7 @@ pub fn sys_spawn_on_click(
     mut commands: Commands,
     mut press_events: EventReader<InputPress>,
     pointers: CameraPointerParam,
-    current_inspector: Res<CurrentInspectedUnit>,
+    current_inspector: Res<CurrentIntention>,
     bounds: Res<LevelBounds>,
     building_data: Query<(&buildings::SpriteData, &buildings::BuildingType)>,
 ) {
@@ -172,7 +172,7 @@ pub fn sys_spawn_on_click(
             continue;
         };
         match *current_inspector {
-            CurrentInspectedUnit::Prospective(ref building) => {
+            CurrentIntention::Prospective(ref building) => {
                 info!("Prospective building click");
                 if bounds.in_bounds(pos) {
                     let Ok((_, building_type)) = building_data.get(*building) else {
@@ -187,7 +187,7 @@ pub fn sys_spawn_on_click(
                         .id();
 
                     commands.run_system_with_input(building_type.constructor_system_id, new_entity);
-                    commands.insert_resource(CurrentInspectedUnit::None);
+                    commands.insert_resource(CurrentIntention::None);
                 }
             }
             _ => {}
@@ -224,7 +224,7 @@ impl Harvester {
             Sprite::default(),
             PickableBundle::default(),
             On::<Pointer<Select>>::commands_mut(|event, commands| {
-                commands.insert_resource(CurrentInspectedUnit::Harvester(event.target));
+                commands.insert_resource(CurrentIntention::Harvester(event.target));
             }),
         )
     }
