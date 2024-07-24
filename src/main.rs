@@ -17,10 +17,12 @@ use bevy_mod_picking::selection::{Select, SelectionPluginSettings};
 use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle};
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
+use construction_preview::BuildingPreviewPlugin;
 use fruit::{FruitBranch, FruitBranchBundle};
 use fruit_type::FruitSpeciesPlugin;
 use ui::CurrentInspectedUnit;
 
+mod construction_preview;
 mod fruit;
 mod fruit_type;
 mod plant_roots;
@@ -59,6 +61,7 @@ fn main() {
         })
         .add_plugins(EguiPlugin)
         .add_plugins(FruitSpeciesPlugin)
+        .add_plugins(BuildingPreviewPlugin)
         .insert_resource(LevelBounds {
             min: vec2(-300.0, -300.0),
             max: vec2(300.0, 300.0),
