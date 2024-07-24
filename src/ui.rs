@@ -7,7 +7,8 @@ use bevy_egui::{
 };
 
 use crate::{
-    buildings::DebugPlantType, plant_roots::Plant, GameState, Harvester, HarvesterType, Score,
+    buildings::{BuildingTypeMap, DebugPlantType},
+    GameState, HarvesterType, Score,
 };
 
 pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
@@ -67,21 +68,20 @@ pub fn scoreboard(
 pub enum CurrentIntention {
     #[default]
     None,
-    Tree(Entity),
-    Harvester(Entity),
+    Inspect(TypeId, Entity),
+    Command(TypeId, Entity),
     Prospective(TypeId),
 }
 
 pub fn sys_selected_unit_ui(
     mut contexts: EguiContexts,
     current: Res<CurrentIntention>,
-    tree_query: Query<&Plant>,
-    harvester_query: Query<&Harvester>,
+    building_types: Res<BuildingTypeMap>,
 ) {
     match *current {
         CurrentIntention::None => {}
-        CurrentIntention::Tree(ent) => {
-            let Ok(tree) = tree_query.get(ent) else {
+        CurrentIntention::Inspect(type_id, _ent) => {
+            let Some(building) = building_types.type_map.get(&type_id) else {
                 return;
             };
             egui::Window::new("Selected Unit")
@@ -90,30 +90,33 @@ pub fn sys_selected_unit_ui(
                 .interactable(false)
                 .resizable(false)
                 .show(contexts.ctx_mut(), |ui| {
-                    ui.label(format!("Tree type: {:?}", tree.genus));
+                    ui.label(format!("Type: {}", building.name()));
                 });
         }
-        CurrentIntention::Harvester(ent) => {
-            let Ok(harvester) = harvester_query.get(ent) else {
+        CurrentIntention::Command(type_id, _ent) => {
+            let Some(building) = building_types.type_map.get(&type_id) else {
                 return;
             };
-            egui::Window::new("Selected Unit")
+            egui::Window::new("Command Unit")
                 .collapsible(false)
                 .anchor(Align2::LEFT_BOTTOM, egui::vec2(0.0, 0.0))
                 .interactable(false)
                 .resizable(false)
                 .show(contexts.ctx_mut(), |ui| {
-                    ui.label(format!("Harvester, range: {}", harvester.range_units));
+                    ui.label(format!("Type: {}", building.name()));
                 });
         }
-        CurrentIntention::Prospective(ref bu) => {
+        CurrentIntention::Prospective(type_id) => {
+            let Some(building) = building_types.type_map.get(&type_id) else {
+                return;
+            };
             egui::Window::new("Place Unit")
                 .collapsible(false)
                 .anchor(Align2::LEFT_BOTTOM, egui::vec2(0.0, 0.0))
                 .interactable(false)
                 .resizable(false)
                 .show(contexts.ctx_mut(), |ui| {
-                    ui.label(format!("{:?}", bu));
+                    ui.label(format!("Type: {}", building.name()));
                 });
         }
     }
