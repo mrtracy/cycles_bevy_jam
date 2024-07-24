@@ -53,7 +53,7 @@ pub fn scoreboard(
             }
             ui.menu_button("+", |ui| {
                 if ui.button("Harvester").clicked() {
-                    commands.insert_resource(CurrentInspectedUnit::Prospective(
+                    commands.insert_resource(CurrentIntention::Prospective(
                         *buildings
                             .type_map
                             .get(&TypeId::of::<HarvesterType>())
@@ -61,7 +61,7 @@ pub fn scoreboard(
                     ))
                 }
                 if ui.button("DebugPlant").clicked() {
-                    commands.insert_resource(CurrentInspectedUnit::Prospective(
+                    commands.insert_resource(CurrentIntention::Prospective(
                         *buildings
                             .type_map
                             .get(&TypeId::of::<DebugPlantType>())
@@ -73,7 +73,7 @@ pub fn scoreboard(
 }
 
 #[derive(Resource, Default, PartialEq)]
-pub enum CurrentInspectedUnit {
+pub enum CurrentIntention {
     #[default]
     None,
     Tree(Entity),
@@ -83,13 +83,13 @@ pub enum CurrentInspectedUnit {
 
 pub fn sys_selected_unit_ui(
     mut contexts: EguiContexts,
-    current: Res<CurrentInspectedUnit>,
+    current: Res<CurrentIntention>,
     tree_query: Query<&Plant>,
     harvester_query: Query<&Harvester>,
 ) {
     match *current {
-        CurrentInspectedUnit::None => {}
-        CurrentInspectedUnit::Tree(ent) => {
+        CurrentIntention::None => {}
+        CurrentIntention::Tree(ent) => {
             let Ok(tree) = tree_query.get(ent) else {
                 return;
             };
@@ -102,7 +102,7 @@ pub fn sys_selected_unit_ui(
                     ui.label(format!("Tree type: {:?}", tree.genus));
                 });
         }
-        CurrentInspectedUnit::Harvester(ent) => {
+        CurrentIntention::Harvester(ent) => {
             let Ok(harvester) = harvester_query.get(ent) else {
                 return;
             };
@@ -115,7 +115,7 @@ pub fn sys_selected_unit_ui(
                     ui.label(format!("Harvester, range: {}", harvester.range_units));
                 });
         }
-        CurrentInspectedUnit::Prospective(ref bu) => {
+        CurrentIntention::Prospective(ref bu) => {
             egui::Window::new("Place Unit")
                 .collapsible(false)
                 .anchor(Align2::LEFT_BOTTOM, egui::vec2(0.0, 0.0))

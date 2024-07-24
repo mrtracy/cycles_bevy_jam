@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_picking::pointer::PointerId;
 
-use crate::{buildings::SpriteData, ui::CurrentInspectedUnit, CameraPointerParam, LevelBounds};
+use crate::{buildings::SpriteData, ui::CurrentIntention, CameraPointerParam, LevelBounds};
 
 #[derive(Component)]
 pub struct BuildingPreview;
@@ -9,12 +9,12 @@ pub struct BuildingPreview;
 pub fn sys_hover_building_effect(
     mut commands: Commands,
     pointers: CameraPointerParam,
-    current_inspector: Res<CurrentInspectedUnit>,
+    current_inspector: Res<CurrentIntention>,
     bounds: Res<LevelBounds>,
     mut building_preview_query: Query<(Entity, &mut Transform), With<BuildingPreview>>,
     building_data: Query<&SpriteData>,
 ) {
-    let CurrentInspectedUnit::Prospective(ent) = *current_inspector else {
+    let CurrentIntention::Prospective(ent) = *current_inspector else {
         if let Ok((entity, _)) = building_preview_query.get_single() {
             commands.entity(entity).despawn();
         };
@@ -54,8 +54,8 @@ pub fn sys_hover_building_effect(
 
 pub struct BuildingPreviewPlugin;
 
-pub fn building_preview_active(res: Res<CurrentInspectedUnit>) -> bool {
-    matches!(*res, CurrentInspectedUnit::Prospective(..))
+pub fn building_preview_active(res: Res<CurrentIntention>) -> bool {
+    matches!(*res, CurrentIntention::Prospective(..))
 }
 
 impl Plugin for BuildingPreviewPlugin {
@@ -63,7 +63,7 @@ impl Plugin for BuildingPreviewPlugin {
         app.add_systems(
             Update,
             sys_hover_building_effect
-                .run_if(building_preview_active.or_else(resource_changed::<CurrentInspectedUnit>)),
+                .run_if(building_preview_active.or_else(resource_changed::<CurrentIntention>)),
         );
     }
 }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 
-use crate::{fruit_type::FruitGenus, ui::CurrentInspectedUnit, LevelBounds};
+use crate::{fruit_type::FruitGenus, ui::CurrentIntention, LevelBounds};
 
 #[derive(Component)]
 pub struct Plant {
@@ -19,7 +19,7 @@ impl Plant {
             Sprite::default(),
             PickableBundle::default(),
             On::<Pointer<Select>>::commands_mut(|event, commands| {
-                commands.insert_resource(CurrentInspectedUnit::Tree(event.target));
+                commands.insert_resource(CurrentIntention::Tree(event.target));
             }),
         )
     }
