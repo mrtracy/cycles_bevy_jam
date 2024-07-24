@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_picking::pointer::PointerId;
 
-use crate::{buildings::SpriteData, ui::CurrentIntention, CameraPointerParam, LevelBounds};
+use crate::{buildings::BuildingTypeMap, ui::CurrentIntention, CameraPointerParam, LevelBounds};
 
 #[derive(Component)]
 pub struct BuildingPreview;
@@ -12,9 +12,9 @@ pub fn sys_hover_building_effect(
     current_inspector: Res<CurrentIntention>,
     bounds: Res<LevelBounds>,
     mut building_preview_query: Query<(Entity, &mut Transform), With<BuildingPreview>>,
-    building_data: Query<&SpriteData>,
+    building_types: Res<BuildingTypeMap>,
 ) {
-    let CurrentIntention::Prospective(ent) = *current_inspector else {
+    let CurrentIntention::Prospective(typ) = *current_inspector else {
         if let Ok((entity, _)) = building_preview_query.get_single() {
             commands.entity(entity).despawn();
         };
@@ -27,7 +27,8 @@ pub fn sys_hover_building_effect(
     if !bounds.in_bounds(pos) {
         return;
     }
-    let Ok(sprite_data) = building_data.get(ent) else {
+
+    let Some(building_type) = building_types.type_map.get(&typ) else {
         warn!("Sprite data was not found for prospective entity type");
         return;
     };
@@ -39,7 +40,7 @@ pub fn sys_hover_building_effect(
             commands.spawn((
                 BuildingPreview,
                 SpriteBundle {
-                    texture: sprite_data.primary_sprite.clone(),
+                    texture: building_type.sprite_image().clone(),
                     transform: Transform::from_xyz(pos.x, pos.y, 0.),
                     sprite: Sprite {
                         color: Color::linear_rgba(0.2, 0.3, 1.0, 0.4).into(),

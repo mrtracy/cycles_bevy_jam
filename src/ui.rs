@@ -7,9 +7,7 @@ use bevy_egui::{
 };
 
 use crate::{
-    buildings::{BuildingTypeMap, DebugPlantType, HarvesterType},
-    plant_roots::Plant,
-    GameState, Harvester, Score,
+    buildings::DebugPlantType, plant_roots::Plant, GameState, Harvester, HarvesterType, Score,
 };
 
 pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
@@ -35,7 +33,6 @@ pub fn scoreboard(
     mut contexts: EguiContexts,
     mut score: ResMut<Score>,
     mut next_state: ResMut<NextState<GameState>>,
-    buildings: Res<BuildingTypeMap>,
 ) {
     let score_label = format!("Score: {}", score.to_string());
     egui::Window::new("Fruitstar")
@@ -53,20 +50,14 @@ pub fn scoreboard(
             }
             ui.menu_button("+", |ui| {
                 if ui.button("Harvester").clicked() {
-                    commands.insert_resource(CurrentIntention::Prospective(
-                        *buildings
-                            .type_map
-                            .get(&TypeId::of::<HarvesterType>())
-                            .unwrap(),
-                    ))
+                    commands.insert_resource(CurrentIntention::Prospective(TypeId::of::<
+                        HarvesterType,
+                    >()))
                 }
                 if ui.button("DebugPlant").clicked() {
-                    commands.insert_resource(CurrentIntention::Prospective(
-                        *buildings
-                            .type_map
-                            .get(&TypeId::of::<DebugPlantType>())
-                            .unwrap(),
-                    ))
+                    commands.insert_resource(CurrentIntention::Prospective(TypeId::of::<
+                        DebugPlantType,
+                    >()))
                 }
             });
         });
@@ -78,7 +69,7 @@ pub enum CurrentIntention {
     None,
     Tree(Entity),
     Harvester(Entity),
-    Prospective(Entity),
+    Prospective(TypeId),
 }
 
 pub fn sys_selected_unit_ui(
