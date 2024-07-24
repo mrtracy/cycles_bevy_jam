@@ -7,7 +7,7 @@ use bevy_egui::{
 };
 
 use crate::{
-    buildings::{BuildingTypeMap, DebugPlantType},
+    units::{BuildingTypeMap, DebugPlantType},
     GameState, HarvesterType, Score,
 };
 

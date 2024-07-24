@@ -3,7 +3,7 @@ use std::any::TypeId;
 use bevy::prelude::*;
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 
-use crate::{buildings::DebugPlantType, fruit_type::FruitGenus, ui::CurrentIntention, LevelBounds};
+use crate::{units::DebugPlantType, fruit_type::FruitGenus, ui::CurrentIntention, LevelBounds};
 
 #[derive(Component)]
 pub struct Plant {

@@ -19,7 +19,7 @@ use bevy_mod_picking::selection::{Select, SelectionPluginSettings};
 use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle};
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
-use buildings::{Building, BuildingTypeMap, BuildingTypePlugin};
+use units::{Building, BuildingTypeMap, BuildingTypePlugin};
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
 use ui::CurrentIntention;
@@ -29,6 +29,7 @@ mod fruit;
 mod fruit_type;
 mod plant_roots;
 mod ui;
+pub mod units;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
@@ -284,4 +285,3 @@ pub fn sys_harvester_move_to_target(
 #[derive(Resource, Deref, DerefMut)]
 pub struct Score(usize);
 
-pub mod buildings;
