@@ -18,7 +18,7 @@ use bevy_mod_picking::selection::{Select, SelectionPluginSettings};
 use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle};
 use bevy_spatial::kdtree::KDTree2;
 use bevy_spatial::{AutomaticUpdate, SpatialAccess, SpatialStructure, TransformMode};
-use buildings::BuildingTypePlugin;
+use buildings::{Building, BuildingTypeMap, BuildingTypePlugin};
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
 use ui::CurrentIntention;
@@ -86,8 +86,7 @@ fn main() {
                     fruit::sys_fruit_branch_spawn_fruit,
                     fruit::sys_fruit_grow,
                     ui::scoreboard,
-                    ui::sys_selected_unit_ui
-                        .run_if(not(resource_equals(CurrentIntention::None))),
+                    ui::sys_selected_unit_ui.run_if(not(resource_equals(CurrentIntention::None))),
                 )
                     .run_if(in_state(GameState::Playing)),
             ),
@@ -101,9 +100,7 @@ fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 }
 
-fn setup_game(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Harvester::new_bundle(&asset_server, 50));
-}
+fn setup_game(mut _commands: Commands, _asset_server: Res<AssetServer>) {}
 
 pub fn sys_draw_border(mut gizmos: Gizmos, bounds: Res<LevelBounds>) {
     gizmos.line_2d(bounds.min, bounds.max.with_y(bounds.min.y), Color::WHITE);
@@ -162,7 +159,7 @@ pub fn sys_spawn_on_click(
     pointers: CameraPointerParam,
     current_inspector: Res<CurrentIntention>,
     bounds: Res<LevelBounds>,
-    building_data: Query<(&buildings::SpriteData, &buildings::BuildingType)>,
+    building_types: Res<BuildingTypeMap>,
 ) {
     for press in press_events
         .read()
@@ -172,10 +169,10 @@ pub fn sys_spawn_on_click(
             continue;
         };
         match *current_inspector {
-            CurrentIntention::Prospective(ref building) => {
+            CurrentIntention::Prospective(ref building_type_id) => {
                 info!("Prospective building click");
                 if bounds.in_bounds(pos) {
-                    let Ok((_, building_type)) = building_data.get(*building) else {
+                    let Some(building_type) = building_types.type_map.get(building_type_id) else {
                         info!("Propective building type was not found");
                         continue;
                     };
@@ -185,8 +182,7 @@ pub fn sys_spawn_on_click(
                             ..Default::default()
                         })
                         .id();
-
-                    commands.run_system_with_input(building_type.constructor_system_id, new_entity);
+                    building_type.construct_building(&mut commands, new_entity);
                     commands.insert_resource(CurrentIntention::None);
                 }
             }
@@ -213,20 +209,36 @@ pub struct Harvester {
     pub target: Vec2,
 }
 
-impl Harvester {
-    pub fn new_bundle(asset_server: &AssetServer, range_units: usize) -> impl Bundle {
-        (
+pub struct HarvesterType {
+    sprite_handle: Handle<Image>,
+}
+
+impl Building for HarvesterType {
+    fn init_assets(&mut self, asset_server: &AssetServer) {
+        self.sprite_handle = asset_server.load("harvester_test.jpg");
+    }
+
+    fn name(&self) -> std::borrow::Cow<'static, str> {
+        "Harvester".into()
+    }
+
+    fn construct_building(&self, commands: &mut Commands, target: Entity) {
+        commands.entity(target).insert((
             Harvester {
-                range_units,
+                range_units: 15,
                 target: vec2(0., 0.),
             },
-            asset_server.load::<Image>("harvester_test.png"),
+            self.sprite_handle.clone(),
             Sprite::default(),
             PickableBundle::default(),
             On::<Pointer<Select>>::commands_mut(|event, commands| {
                 commands.insert_resource(CurrentIntention::Harvester(event.target));
             }),
-        )
+        ));
+    }
+
+    fn sprite_image(&self) -> &Handle<Image> {
+        &self.sprite_handle
     }
 }
 
