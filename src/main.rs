@@ -146,6 +146,7 @@ pub fn get_world_click_pos(
 
 pub fn sys_spawn_on_click(
     mut commands: Commands,
+    current_inspector: Res<CurrentInspectedUnit>,
     buttons: Res<ButtonInput<MouseButton>>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
     camera: Query<(&Camera, &GlobalTransform)>,
@@ -153,22 +154,33 @@ pub fn sys_spawn_on_click(
     bounds: Res<LevelBounds>,
 ) {
     if buttons.just_pressed(MouseButton::Left) {
-        if let Some(pos) = get_world_click_pos(&q_windows, &camera) {
-            if bounds.in_bounds(pos) {
-                commands
-                    .spawn(plant_roots::Plant::new_bundle(
-                        asset_server.load("plant_base_test.png"),
-                        pos,
-                    ))
-                    .with_children(|child_commands| {
-                        child_commands.spawn(FruitBranchBundle {
-                            branch: FruitBranch { species: 0 },
-                            sprite: SpriteBundle {
-                                ..Default::default()
-                            },
-                        });
-                    });
+        match *current_inspector {
+            CurrentInspectedUnit::Prospective(ref building) => {
+                if let Some(pos) = get_world_click_pos(&q_windows, &camera) {
+                    if bounds.in_bounds(pos) {
+                        match building {
+                            ui::BuildableUnit::Harvester => {}
+                            ui::BuildableUnit::DebugPlant => {
+                                commands
+                                    .spawn(plant_roots::Plant::new_bundle(
+                                        asset_server.load("plant_base_test.png"),
+                                        pos,
+                                    ))
+                                    .with_children(|child_commands| {
+                                        child_commands.spawn(FruitBranchBundle {
+                                            branch: FruitBranch { species: 0 },
+                                            sprite: SpriteBundle {
+                                                ..Default::default()
+                                            },
+                                        });
+                                    });
+                            }
+                        }
+                        commands.insert_resource(CurrentInspectedUnit::None);
+                    }
+                }
             }
+            _ => {}
         }
     }
 }
