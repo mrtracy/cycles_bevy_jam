@@ -5,7 +5,7 @@ use bevy::{prelude::*, utils::HashMap};
 
 use crate::{
     fruit::{FruitBranch, FruitBranchBundle},
-    plant_roots,
+    plant_roots, HarvesterType,
 };
 
 pub trait Building: Send + Sync {
@@ -66,11 +66,18 @@ pub fn sys_setup_building_types(world: &mut World) {
     let mut building_map = BuildingTypeMap::default();
     let asset_server = world.get_resource::<AssetServer>().unwrap().clone();
 
-    let mut plant_type = Box::new(DebugPlantType::default());
-    plant_type.init_assets(&asset_server);
-    building_map
-        .type_map
-        .insert(TypeId::of::<DebugPlantType>(), plant_type);
+    macro_rules! register_type {
+        ($building_type:ident) => {{
+            let mut building_type = Box::new($building_type::default());
+            building_type.init_assets(&asset_server);
+            building_map
+                .type_map
+                .insert(TypeId::of::<$building_type>(), building_type);
+        }};
+    }
+
+    register_type!(DebugPlantType);
+    register_type!(HarvesterType);
 
     world.insert_resource(building_map);
 }

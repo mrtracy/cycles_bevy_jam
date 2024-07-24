@@ -4,6 +4,7 @@
 // Feel free to delete this line.
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
+use std::any::TypeId;
 use std::time::Duration;
 
 use bevy::asset::AssetMetaCheck;
@@ -209,13 +210,14 @@ pub struct Harvester {
     pub target: Vec2,
 }
 
+#[derive(Default)]
 pub struct HarvesterType {
     sprite_handle: Handle<Image>,
 }
 
 impl Building for HarvesterType {
     fn init_assets(&mut self, asset_server: &AssetServer) {
-        self.sprite_handle = asset_server.load("harvester_test.jpg");
+        self.sprite_handle = asset_server.load("harvester_test.png");
     }
 
     fn name(&self) -> std::borrow::Cow<'static, str> {
@@ -232,7 +234,10 @@ impl Building for HarvesterType {
             Sprite::default(),
             PickableBundle::default(),
             On::<Pointer<Select>>::commands_mut(|event, commands| {
-                commands.insert_resource(CurrentIntention::Harvester(event.target));
+                commands.insert_resource(CurrentIntention::Command(
+                    TypeId::of::<HarvesterType>(),
+                    event.target,
+                ));
             }),
         ));
     }
