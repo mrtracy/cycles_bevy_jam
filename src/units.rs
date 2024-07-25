@@ -2,11 +2,13 @@ use std::any::TypeId;
 use std::borrow::Cow;
 
 use bevy::{prelude::*, utils::HashMap};
+use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapType};
 use harvester::{HarvesterPlugin, HarvesterType};
 
 use crate::{
     fruit::{FruitBranch, FruitBranchBundle},
-    plant_roots,
+    level::{CurrentLevel, TilePath},
+    plant_roots, GameState,
 };
 
 pub trait Building: Send + Sync {
@@ -88,7 +90,54 @@ pub struct BuildingTypePlugin;
 impl Plugin for BuildingTypePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, sys_setup_building_types)
+            .add_systems(
+                Update,
+                sys_follow_tile_path.run_if(in_state(GameState::Playing)),
+            )
             .add_plugins(HarvesterPlugin);
+    }
+}
+
+#[derive(Component)]
+pub struct PathFollower {
+    pub current_dist: f32,
+    pub speed: f32,
+}
+
+#[derive(Component)]
+pub struct PathCompleted;
+
+pub fn sys_follow_tile_path(
+    mut commands: Commands,
+    time: Res<Time>,
+    path_q: Query<
+        (&TilePath, &TilemapGridSize, &TilemapType, &GlobalTransform),
+        With<CurrentLevel>,
+    >,
+    mut followers: Query<(Entity, &mut Transform, &mut PathFollower), Without<PathCompleted>>,
+) {
+    let Ok((TilePath { path }, grid_size, map_type, map_transform)) = path_q.get_single() else {
+        return;
+    };
+    for (follower_ent, mut follower_tfm, mut follower) in followers.iter_mut() {
+        follower.current_dist += follower.speed * time.delta_seconds();
+        let target_idx = follower.current_dist.floor() as usize;
+        if target_idx >= path.len() - 1 {
+            commands.entity(follower_ent).insert(PathCompleted);
+            follower_tfm.translation = (
+                path[path.len() - 1].center_in_world(grid_size, map_type),
+                5.,
+            )
+                .into()
+        } else {
+            let current_idx_pos = path[target_idx].center_in_world(grid_size, map_type);
+            let next_idx_pos = path[target_idx + 1].center_in_world(grid_size, map_type);
+            follower_tfm.translation = map_transform.translation()
+                + Into::<Vec3>::into((
+                    current_idx_pos.lerp(next_idx_pos, follower.current_dist.fract()),
+                    5.,
+                ));
+        }
     }
 }
 
