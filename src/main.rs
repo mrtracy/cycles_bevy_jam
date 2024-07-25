@@ -80,7 +80,6 @@ fn main() {
                 (ui::main_menu).run_if(in_state(GameState::MainMenu)),
                 (
                     sys_spawn_on_click,
-                    plant_roots::sys_plant_move,
                     fruit::sys_fruit_branch_spawn_fruit,
                     fruit::sys_fruit_grow,
                     ui::scoreboard,

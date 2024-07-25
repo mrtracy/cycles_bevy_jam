@@ -3,7 +3,11 @@ use std::any::TypeId;
 use bevy::prelude::*;
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 
-use crate::{fruit_type::FruitGenus, ui::CurrentIntention, units::DebugPlantType, LevelBounds};
+use crate::{
+    fruit_type::FruitGenus,
+    ui::CurrentIntention,
+    units::{DebugPlantType, PathFollower},
+};
 
 #[derive(Component)]
 pub struct Plant {
@@ -26,19 +30,10 @@ impl Plant {
                     event.target,
                 ));
             }),
+            PathFollower {
+                current_dist: 0.0,
+                speed: 5.0,
+            },
         )
-    }
-}
-
-pub fn sys_plant_move(
-    time: Res<Time>,
-    bounds: Res<LevelBounds>,
-    mut plants: Query<&mut Transform, With<Plant>>,
-) {
-    for mut plant_txfm in plants.iter_mut() {
-        plant_txfm.translation -= Vec3::new(50.0 * time.delta_seconds(), 0.0, 0.0);
-        if plant_txfm.translation.x <= bounds.min.x {
-            plant_txfm.translation.x = bounds.max.x;
-        }
     }
 }
