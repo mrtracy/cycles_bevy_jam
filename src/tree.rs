@@ -3,11 +3,7 @@ use std::any::TypeId;
 use bevy::prelude::*;
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 
-use crate::{
-    fruit_type::FruitGenus,
-    ui::CurrentIntention,
-    units::{DebugPlantType, PathFollower},
-};
+use crate::{fruit_type::FruitGenus, ui::CurrentIntention, units::DebugPlantType};
 
 #[derive(Component)]
 pub struct Tree {
@@ -30,10 +26,6 @@ impl Tree {
                     event.target,
                 ));
             }),
-            PathFollower {
-                current_dist: 0.0,
-                speed: 5.0,
-            },
         )
     }
 }
