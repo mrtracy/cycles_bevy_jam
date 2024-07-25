@@ -88,8 +88,7 @@ pub struct BuildingTypePlugin;
 impl Plugin for BuildingTypePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, sys_setup_building_types)
-            .add_plugins(HarvesterPlugin)
-            ;
+            .add_plugins(HarvesterPlugin);
     }
 }
 
