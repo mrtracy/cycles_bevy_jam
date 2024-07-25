@@ -20,7 +20,10 @@ use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
 use ui::CurrentIntention;
-use units::{BuildingTypeMap, BuildingTypePlugin, CurrentWave, DebugPlantType, NextWaveQueue};
+use units::{
+    BuildingTypeMap, BuildingTypePlugin, CurrentWave, DebugPlantType, IntermissionTimer,
+    NextWaveQueue,
+};
 
 mod construction_preview;
 mod fruit;
@@ -37,6 +40,16 @@ pub enum GameState {
     Loading,
     Playing,
     GameOver,
+}
+
+#[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
+#[source(GameState=GameState::Playing)]
+pub enum PlayState {
+    #[default]
+    Setup,
+    Intermission,
+    Wave,
+    Paused,
 }
 
 #[derive(Component, Default)]
@@ -75,6 +88,7 @@ fn main() {
         .insert_resource(CurrentIntention::None)
         .insert_resource(NextWaveQueue::default())
         .init_state::<GameState>()
+        .add_sub_state::<PlayState>()
         .add_systems(Startup, setup)
         .add_systems(
             Update,
@@ -92,7 +106,7 @@ fn main() {
             ),
         )
         .add_systems(OnEnter(GameState::Loading), level::kickoff_load)
-        .add_systems(OnEnter(GameState::Playing), setup_game)
+        .add_systems(OnEnter(PlayState::Setup), setup_game)
         .add_systems(
             Update,
             level::sys_wait_for_loading_level.run_if(in_state(GameState::Loading)),
@@ -105,12 +119,16 @@ fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 }
 
-fn setup_game(mut commands: Commands, buildings: Res<BuildingTypeMap>) {
-    let mut wave = CurrentWave::new(Duration::from_secs(1));
+fn setup_game(
+    mut commands: Commands,
+    buildings: Res<BuildingTypeMap>,
+    mut next_play_state: ResMut<NextState<PlayState>>,
+) {
     let tree_type = buildings
         .type_map
         .get(&TypeId::of::<DebugPlantType>())
         .unwrap();
+    let mut initial_unit_queue = vec![];
     for _ in 0..10 {
         let target = commands
             .spawn(SpatialBundle {
@@ -121,9 +139,17 @@ fn setup_game(mut commands: Commands, buildings: Res<BuildingTypeMap>) {
             .id();
         tree_type.construct_building(&mut commands, target);
         commands.entity(target).insert(Visibility::Hidden);
-        wave.unit_queue.push(target);
+        initial_unit_queue.push(target);
     }
-    commands.insert_resource(wave);
+    commands.insert_resource(NextWaveQueue(initial_unit_queue));
+    commands.insert_resource(CurrentWave::new(Duration::from_secs(1)));
+    commands.insert_resource(IntermissionTimer(Timer::new(
+        Duration::from_secs(3),
+        TimerMode::Once,
+    )));
+
+    info!("Setup game complete!");
+    next_play_state.set(PlayState::Intermission);
 }
 
 #[derive(SystemParam)]
