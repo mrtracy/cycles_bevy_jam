@@ -2,10 +2,11 @@ use std::any::TypeId;
 use std::borrow::Cow;
 
 use bevy::{prelude::*, utils::HashMap};
+use harvester::{HarvesterPlugin, HarvesterType};
 
 use crate::{
     fruit::{FruitBranch, FruitBranchBundle},
-    plant_roots, HarvesterType,
+    plant_roots,
 };
 
 pub trait Building: Send + Sync {
@@ -86,6 +87,10 @@ pub struct BuildingTypePlugin;
 
 impl Plugin for BuildingTypePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, sys_setup_building_types);
+        app.add_systems(Startup, sys_setup_building_types)
+            .add_plugins(HarvesterPlugin)
+            ;
     }
 }
+
+pub mod harvester;

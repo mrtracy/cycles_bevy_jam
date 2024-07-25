@@ -7,8 +7,8 @@ use bevy_egui::{
 };
 
 use crate::{
-    units::{BuildingTypeMap, DebugPlantType},
-    GameState, HarvesterType, Score,
+    units::{harvester::HarvesterType, BuildingTypeMap, DebugPlantType},
+    GameState, Score,
 };
 
 pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
