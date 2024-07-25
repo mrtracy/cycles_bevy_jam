@@ -25,7 +25,7 @@ mod construction_preview;
 mod fruit;
 mod fruit_type;
 mod level;
-mod plant_roots;
+mod tree;
 mod ui;
 mod units;
 
