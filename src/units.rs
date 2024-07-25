@@ -5,6 +5,7 @@ use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapType};
 use harvester::{HarvesterPlugin, HarvesterType};
 
+use crate::PlayState;
 use crate::{
     fruit::{FruitBranch, FruitBranchBundle},
     level::{CurrentLevel, TilePath},
@@ -90,12 +91,20 @@ impl Plugin for BuildingTypePlugin {
         app.add_systems(Startup, sys_setup_building_types)
             .add_systems(
                 Update,
+                sys_follow_tile_path.run_if(in_state(GameState::Playing)),
+            )
+            .add_systems(
+                Update,
                 (
-                    sys_follow_tile_path,
                     sys_entity_leaves_wave,
                     sys_wave_place_entities,
+                    sys_detect_wave_completed,
                 )
-                    .run_if(in_state(GameState::Playing)),
+                    .run_if(in_state(PlayState::Wave)),
+            )
+            .add_systems(
+                Update,
+                (sys_intermission_timer).run_if(in_state(PlayState::Intermission)),
             )
             .add_plugins(HarvesterPlugin);
     }
@@ -150,6 +159,9 @@ pub struct QueuedForNextWave;
 #[derive(Resource, Default)]
 pub struct NextWaveQueue(pub Vec<Entity>);
 
+#[derive(Resource)]
+pub struct IntermissionTimer(pub Timer);
+
 #[derive(Resource, Default)]
 pub struct CurrentWave {
     pub unit_queue: Vec<Entity>,
@@ -163,6 +175,22 @@ impl CurrentWave {
             ..Default::default()
         }
     }
+}
+
+pub fn sys_intermission_timer(
+    time: Res<Time>,
+    mut intermission_timer: ResMut<IntermissionTimer>,
+    mut next_wave: ResMut<NextWaveQueue>,
+    mut current_wave: ResMut<CurrentWave>,
+    mut next_play_state: ResMut<NextState<PlayState>>,
+) {
+    intermission_timer.0.tick(time.delta());
+    if !intermission_timer.0.finished() {
+        return;
+    };
+
+    current_wave.unit_queue.extend(next_wave.0.drain(..).rev());
+    next_play_state.set(PlayState::Wave);
 }
 
 pub fn sys_entity_leaves_wave(
@@ -182,6 +210,18 @@ pub fn sys_entity_leaves_wave(
     }
 }
 
+pub fn sys_detect_wave_completed(
+    current_wave: Res<CurrentWave>,
+    unit_query: Query<Entity, With<PathFollower>>,
+    mut next_play_state: ResMut<NextState<PlayState>>,
+    mut intermission_timer: ResMut<IntermissionTimer>,
+) {
+    if current_wave.unit_queue.is_empty() && unit_query.is_empty() {
+        intermission_timer.0.reset();
+        next_play_state.set(PlayState::Intermission);
+    }
+}
+
 pub fn sys_wave_place_entities(
     mut commands: Commands,
     mut wave: ResMut<CurrentWave>,
@@ -198,7 +238,7 @@ pub fn sys_wave_place_entities(
             Visibility::Inherited,
             PathFollower {
                 current_dist: 0.0,
-                speed: 5.0,
+                speed: 20.0,
             },
         ));
     }
