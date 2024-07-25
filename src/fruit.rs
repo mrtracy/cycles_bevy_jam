@@ -71,7 +71,7 @@ pub fn sys_fruit_grow(
         let fruit_type = fruit_map
             .species_vector
             .get(fruit.fruit_type)
-            .expect(&format!("Unknown fruit type {}", fruit.fruit_type));
+            .unwrap_or_else(|| panic!("Unknown fruit type {}", fruit.fruit_type));
         match *growth {
             FruitGrowthState::Bud {
                 ref mut seconds_of_growth,

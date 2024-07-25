@@ -58,10 +58,7 @@ pub(crate) fn sys_wait_for_loading_level(
     for x in 0..map_size.x {
         for y in 0..map_size.y {
             let tile_pos = TilePos { x, y };
-            let filled = match grayscale.get_pixel(x, y).0[0] {
-                x if x < 50 => false,
-                _ => true,
-            };
+            let filled = matches!(grayscale.get_pixel(x, y).0[0], x if x > 50);
             if filled {
                 path_grid.add_vertex((x as usize, y as usize));
             }
