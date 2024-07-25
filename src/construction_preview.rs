@@ -43,7 +43,7 @@ pub fn sys_hover_building_effect(
                     texture: building_type.sprite_image().clone(),
                     transform: Transform::from_xyz(pos.x, pos.y, 0.),
                     sprite: Sprite {
-                        color: Color::linear_rgba(0.2, 0.3, 1.0, 0.4).into(),
+                        color: Color::linear_rgba(0.2, 0.3, 1.0, 0.4),
                         ..Default::default()
                     },
                     ..Default::default()

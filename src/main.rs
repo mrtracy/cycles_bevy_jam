@@ -148,25 +148,22 @@ pub fn sys_spawn_on_click(
         let Some(pos) = pointers.get_world_pointer_location(press.pointer_id) else {
             continue;
         };
-        match *current_inspector {
-            CurrentIntention::Prospective(ref building_type_id) => {
-                info!("Prospective building click");
-                if bounds.in_bounds(pos) {
-                    let Some(building_type) = building_types.type_map.get(building_type_id) else {
-                        info!("Propective building type was not found");
-                        continue;
-                    };
-                    let new_entity = commands
-                        .spawn(SpatialBundle {
-                            transform: Transform::from_xyz(pos.x, pos.y, 0.),
-                            ..Default::default()
-                        })
-                        .id();
-                    building_type.construct_building(&mut commands, new_entity);
-                    commands.insert_resource(CurrentIntention::None);
-                }
+        if let CurrentIntention::Prospective(ref building_type_id) = *current_inspector {
+            info!("Prospective building click");
+            if bounds.in_bounds(pos) {
+                let Some(building_type) = building_types.type_map.get(building_type_id) else {
+                    info!("Propective building type was not found");
+                    continue;
+                };
+                let new_entity = commands
+                    .spawn(SpatialBundle {
+                        transform: Transform::from_xyz(pos.x, pos.y, 0.),
+                        ..Default::default()
+                    })
+                    .id();
+                building_type.construct_building(&mut commands, new_entity);
+                commands.insert_resource(CurrentIntention::None);
             }
-            _ => {}
         }
     }
 }

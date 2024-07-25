@@ -35,7 +35,7 @@ pub fn scoreboard(
     mut score: ResMut<Score>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    let score_label = format!("Score: {}", score.to_string());
+    let score_label = format!("Score: {}", score.0);
     egui::Window::new("Fruitstar")
         .collapsible(false)
         .movable(false)
