@@ -23,7 +23,7 @@ pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<Ga
                     .button(RichText::new("Start").text_style(egui::TextStyle::Heading))
                     .clicked()
                 {
-                    next_state.set(GameState::Playing);
+                    next_state.set(GameState::Loading);
                 }
             });
         });
