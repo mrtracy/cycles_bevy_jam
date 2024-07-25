@@ -10,15 +10,15 @@ use crate::{
 };
 
 #[derive(Component)]
-pub struct Plant {
+pub struct Tree {
     #[allow(dead_code)]
     pub genus: FruitGenus,
 }
 
-impl Plant {
+impl Tree {
     pub fn new_bundle(texture: Handle<Image>) -> impl Bundle {
         (
-            Plant {
+            Tree {
                 genus: FruitGenus::Carrot,
             },
             texture,

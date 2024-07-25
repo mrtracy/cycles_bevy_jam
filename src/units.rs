@@ -8,7 +8,7 @@ use harvester::{HarvesterPlugin, HarvesterType};
 use crate::{
     fruit::{FruitBranch, FruitBranchBundle},
     level::{CurrentLevel, TilePath},
-    plant_roots, GameState,
+    tree, GameState,
 };
 
 pub trait Building: Send + Sync {
@@ -47,9 +47,7 @@ impl Building for DebugPlantType {
     fn construct_building(&self, commands: &mut Commands, target: Entity) {
         commands
             .entity(target)
-            .insert(plant_roots::Plant::new_bundle(
-                self.sprite_image_handle.clone(),
-            ))
+            .insert(tree::Tree::new_bundle(self.sprite_image_handle.clone()))
             .with_children(|child_commands| {
                 child_commands.spawn(FruitBranchBundle {
                     branch: FruitBranch { species: 0 },
