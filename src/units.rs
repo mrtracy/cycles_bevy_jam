@@ -1,5 +1,5 @@
-use std::any::TypeId;
 use std::borrow::Cow;
+use std::{any::TypeId, time::Duration};
 
 use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapType};
@@ -90,7 +90,12 @@ impl Plugin for BuildingTypePlugin {
         app.add_systems(Startup, sys_setup_building_types)
             .add_systems(
                 Update,
-                sys_follow_tile_path.run_if(in_state(GameState::Playing)),
+                (
+                    sys_follow_tile_path,
+                    sys_entity_leaves_wave,
+                    sys_wave_place_entities,
+                )
+                    .run_if(in_state(GameState::Playing)),
             )
             .add_plugins(HarvesterPlugin);
     }
@@ -136,6 +141,66 @@ pub fn sys_follow_tile_path(
                     5.,
                 ));
         }
+    }
+}
+
+#[derive(Component)]
+pub struct QueuedForNextWave;
+
+#[derive(Resource, Default)]
+pub struct NextWaveQueue(pub Vec<Entity>);
+
+#[derive(Resource, Default)]
+pub struct CurrentWave {
+    pub unit_queue: Vec<Entity>,
+    pub next_unit_timer: Timer,
+}
+
+impl CurrentWave {
+    pub fn new(unit_spacing_time: Duration) -> Self {
+        CurrentWave {
+            next_unit_timer: Timer::new(unit_spacing_time, TimerMode::Once),
+            ..Default::default()
+        }
+    }
+}
+
+pub fn sys_entity_leaves_wave(
+    mut commands: Commands,
+    mut next_wave: ResMut<NextWaveQueue>,
+    leave_query: Query<Entity, With<PathCompleted>>,
+) {
+    for left in leave_query.iter() {
+        next_wave.0.push(left);
+        commands
+            .entity(left)
+            .remove::<(PathCompleted, PathFollower)>()
+            .insert((
+                Visibility::Hidden,
+                Transform::from_translation(Vec3::new(-10000.0, 0.0, -10000.0)),
+            ));
+    }
+}
+
+pub fn sys_wave_place_entities(
+    mut commands: Commands,
+    mut wave: ResMut<CurrentWave>,
+    time: Res<Time>,
+) {
+    if wave.unit_queue.is_empty() {
+        return;
+    };
+    wave.next_unit_timer.tick(time.delta());
+    if wave.next_unit_timer.finished() {
+        wave.next_unit_timer.reset();
+        let next_unit = wave.unit_queue.pop().unwrap();
+        commands.entity(next_unit).insert((
+            Visibility::Inherited,
+            PathFollower {
+                current_dist: 0.0,
+                speed: 5.0,
+            },
+        ));
     }
 }
 

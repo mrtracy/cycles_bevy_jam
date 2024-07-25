@@ -4,6 +4,7 @@
 // Feel free to delete this line.
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
+use std::any::TypeId;
 use std::time::Duration;
 
 use bevy::asset::AssetMetaCheck;
@@ -19,7 +20,7 @@ use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
 use ui::CurrentIntention;
-use units::{BuildingTypeMap, BuildingTypePlugin};
+use units::{BuildingTypeMap, BuildingTypePlugin, CurrentWave, DebugPlantType, NextWaveQueue};
 
 mod construction_preview;
 mod fruit;
@@ -72,6 +73,7 @@ fn main() {
         })
         .insert_resource(Score(0))
         .insert_resource(CurrentIntention::None)
+        .insert_resource(NextWaveQueue::default())
         .init_state::<GameState>()
         .add_systems(Startup, setup)
         .add_systems(
@@ -90,6 +92,7 @@ fn main() {
             ),
         )
         .add_systems(OnEnter(GameState::Loading), level::kickoff_load)
+        .add_systems(OnEnter(GameState::Playing), setup_game)
         .add_systems(
             Update,
             level::sys_wait_for_loading_level.run_if(in_state(GameState::Loading)),
@@ -100,6 +103,27 @@ fn main() {
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
+}
+
+fn setup_game(mut commands: Commands, buildings: Res<BuildingTypeMap>) {
+    let mut wave = CurrentWave::new(Duration::from_secs(1));
+    let tree_type = buildings
+        .type_map
+        .get(&TypeId::of::<DebugPlantType>())
+        .unwrap();
+    for _ in 0..10 {
+        let target = commands
+            .spawn(SpatialBundle {
+                transform: Transform::from_xyz(-10000.0, 0., 0.),
+                visibility: Visibility::Hidden,
+                ..Default::default()
+            })
+            .id();
+        tree_type.construct_building(&mut commands, target);
+        commands.entity(target).insert(Visibility::Hidden);
+        wave.unit_queue.push(target);
+    }
+    commands.insert_resource(wave);
 }
 
 #[derive(SystemParam)]
