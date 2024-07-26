@@ -136,11 +136,11 @@ pub fn sys_follow_tile_path(
         let target_idx = follower.current_dist.floor() as usize;
         if target_idx >= path.len() - 1 {
             commands.entity(follower_ent).insert(PathCompleted);
-            follower_tfm.translation = (
-                path[path.len() - 1].center_in_world(grid_size, map_type),
-                5.,
-            )
-                .into()
+            follower_tfm.translation = map_transform.translation()
+                + Into::<Vec3>::into((
+                    path[path.len() - 1].center_in_world(grid_size, map_type),
+                    5.,
+                ));
         } else {
             let current_idx_pos = path[target_idx].center_in_world(grid_size, map_type);
             let next_idx_pos = path[target_idx + 1].center_in_world(grid_size, map_type);
