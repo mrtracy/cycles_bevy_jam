@@ -100,6 +100,7 @@ fn main() {
                     fruit::sys_fruit_branch_spawn_fruit,
                     fruit::sys_fruit_grow,
                     ui::scoreboard,
+                    ui::sys_ui_build_board,
                     ui::sys_selected_unit_ui.run_if(not(resource_equals(CurrentIntention::None))),
                 )
                     .run_if(in_state(GameState::Playing)),
