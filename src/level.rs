@@ -2,6 +2,7 @@ use super::GameState;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TilePos;
 use pathfinding::{directed::dfs, grid::Grid};
+use thiserror::Error;
 
 // Level loading process:
 //  - Load image asset
@@ -25,6 +26,43 @@ pub struct LoadingLevel(pub Handle<Image>);
 
 pub(crate) fn kickoff_load(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(LoadingLevel(asset_server.load("levels/level1.png")));
+}
+
+#[derive(Error, Debug)]
+pub enum TileMapError {
+    #[error("No starting point was available on the proposed map.")]
+    NoStart,
+    #[error("No path was found from starting point to the end of the map.")]
+    NoPathToEnd,
+}
+
+fn compute_path_from_grid(grid_data: Grid) -> Result<TilePath, TileMapError> {
+    let start = 'findstart: {
+        let x = grid_data.width - 1;
+        for y in 0..grid_data.height - 1 {
+            if grid_data.has_vertex((x, y)) {
+                break 'findstart Some((x, y));
+            }
+        }
+        None
+    };
+    let Some(start) = start else {
+        return Err(TileMapError::NoStart);
+    };
+
+    let Some(path) = dfs::dfs(start, |p| grid_data.neighbours(*p), |p| p.0 == 0) else {
+        return Err(TileMapError::NoPathToEnd);
+    };
+
+    Ok(TilePath {
+        path: path
+            .into_iter()
+            .map(|(x, y)| TilePos {
+                x: x as u32,
+                y: y as u32,
+            })
+            .collect(),
+    })
 }
 
 pub(crate) fn sys_wait_for_loading_level(
@@ -74,26 +112,7 @@ pub(crate) fn sys_wait_for_loading_level(
         }
     }
 
-    let start = 'findstart: {
-        let x = map_size.x - 1;
-        for y in 0..map_size.y {
-            if grayscale.get_pixel(x, y).0[0] > 50 {
-                break 'findstart Some((x as usize, y as usize));
-            }
-        }
-        None
-    }
-    .expect("Level did not have a start position.");
-
-    let path = dfs::dfs(start, |p| path_grid.neighbours(*p), |p| p.0 == 0)
-        .expect("No valid path to end on level")
-        .into_iter()
-        .map(|(x, y)| TilePos {
-            x: x as u32,
-            y: y as u32,
-        })
-        .collect();
-
+    let tile_path = compute_path_from_grid(path_grid).unwrap_or_else(|err| panic!("{:?}", err));
     let tile_size = TilemapTileSize { x: 16.0, y: 16.0 };
     let grid_size = tile_size.into();
     let map_type = TilemapType::default();
@@ -110,7 +129,7 @@ pub(crate) fn sys_wait_for_loading_level(
             ..Default::default()
         },
         CurrentLevel,
-        TilePath { path },
+        tile_path,
     ));
 
     commands.remove_resource::<LoadingLevel>();
