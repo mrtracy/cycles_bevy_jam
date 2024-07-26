@@ -5,6 +5,7 @@ use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapType};
 use harvester::{HarvesterPlugin, HarvesterType};
 
+use crate::ui::CurrentIntention;
 use crate::PlayState;
 use crate::{
     fruit::{FruitBranch, FruitBranchBundle},
@@ -91,7 +92,7 @@ impl Plugin for BuildingTypePlugin {
         app.add_systems(Startup, sys_setup_building_types)
             .add_systems(
                 Update,
-                sys_follow_tile_path.run_if(in_state(GameState::Playing)),
+                (sys_follow_tile_path, sys_show_tower_range).run_if(in_state(GameState::Playing)),
             )
             .add_systems(
                 Update,
@@ -242,6 +243,29 @@ pub fn sys_wave_place_entities(
             },
         ));
     }
+}
+
+#[derive(Component)]
+pub struct TowerRange(pub usize);
+
+pub fn sys_show_tower_range(
+    intention: Res<CurrentIntention>,
+    query: Query<(&GlobalTransform, &TowerRange)>,
+    mut gizmos: Gizmos,
+) {
+    let CurrentIntention::Command(_, ent) = *intention else {
+        return;
+    };
+
+    let Ok((gt, range)) = query.get(ent) else {
+        return;
+    };
+
+    gizmos.circle_2d(
+        gt.translation().xy(),
+        range.0 as f32,
+        bevy::color::palettes::css::BLUE,
+    );
 }
 
 pub mod harvester;

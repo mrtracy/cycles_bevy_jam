@@ -66,7 +66,7 @@ fn main() {
         }))
         .add_plugins(
             AutomaticUpdate::<SpatialTracked>::new()
-                .with_frequency(Duration::from_secs_f32(0.3))
+                .with_frequency(Duration::from_secs_f32(0.2))
                 .with_spatial_ds(SpatialStructure::KDTree2)
                 .with_transform(TransformMode::GlobalTransform),
         )
