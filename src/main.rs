@@ -9,8 +9,9 @@ use std::time::Duration;
 
 use bevy::asset::AssetMetaCheck;
 use bevy::ecs::system::SystemParam;
-use bevy::math::vec2;
 use bevy::prelude::*;
+use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize, TilemapType};
+use bevy_ecs_tilemap::tiles::TilePos;
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_egui::EguiPlugin;
 use bevy_mod_picking::pointer::{InputPress, PointerButton, PointerId, PointerLocation};
@@ -82,10 +83,6 @@ fn main() {
         .add_plugins(BuildingTypePlugin)
         .add_plugins(FruitSpeciesPlugin)
         .add_plugins(BuildingPreviewPlugin)
-        .insert_resource(LevelBounds {
-            min: vec2(-300.0, -300.0),
-            max: vec2(300.0, 300.0),
-        })
         .insert_resource(Score(0))
         .insert_resource(CurrentIntention::None)
         .insert_resource(NextWaveQueue::default())
@@ -96,7 +93,6 @@ fn main() {
             Update,
             (
                 (ui::main_menu).run_if(in_state(GameState::MainMenu)),
-                sys_draw_border,
                 (
                     sys_spawn_on_click,
                     fruit::sys_fruit_branch_spawn_fruit,
@@ -187,11 +183,39 @@ impl<'w, 's> CameraPointerParam<'w, 's> {
     }
 }
 
-pub fn sys_draw_border(mut gizmos: Gizmos, bounds: Res<LevelBounds>) {
-    gizmos.line_2d(bounds.min, bounds.max.with_y(bounds.min.y), Color::WHITE);
-    gizmos.line_2d(bounds.min, bounds.max.with_x(bounds.min.x), Color::WHITE);
-    gizmos.line_2d(bounds.max, bounds.max.with_y(bounds.min.y), Color::WHITE);
-    gizmos.line_2d(bounds.max, bounds.max.with_x(bounds.min.x), Color::WHITE);
+pub type MapQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static TilemapType,
+        &'static TilemapSize,
+        &'static TilemapGridSize,
+        &'static GlobalTransform,
+    ),
+>;
+
+pub trait MapQueryHelpers {
+    fn snap_to_tile_center(&self, pos: &Vec2) -> Option<Vec3>;
+}
+
+impl<'w, 's> MapQueryHelpers for MapQuery<'w, 's> {
+    fn snap_to_tile_center(&self, pos: &Vec2) -> Option<Vec3> {
+        let Some((map_type, map_size, map_grid_size, map_transform)) = self.get_single().ok()
+        else {
+            warn!("Map data not available for placing buildings");
+            return None;
+        };
+        let clicked_tile = TilePos::from_world_pos(
+            &(*pos - map_transform.translation().xy()),
+            map_size,
+            map_grid_size,
+            map_type,
+        )?;
+        Some(
+            map_transform.translation()
+                + Vec3::from((clicked_tile.center_in_world(map_grid_size, map_type), 5.0)),
+        )
+    }
 }
 
 pub fn sys_spawn_on_click(
@@ -199,7 +223,7 @@ pub fn sys_spawn_on_click(
     mut press_events: EventReader<InputPress>,
     pointers: CameraPointerParam,
     current_inspector: Res<CurrentIntention>,
-    bounds: Res<LevelBounds>,
+    map_query: MapQuery,
     building_types: Res<BuildingTypeMap>,
 ) {
     for press in press_events
@@ -210,34 +234,22 @@ pub fn sys_spawn_on_click(
             continue;
         };
         if let CurrentIntention::Prospective(ref building_type_id) = *current_inspector {
-            info!("Prospective building click");
-            if bounds.in_bounds(pos) {
-                let Some(building_type) = building_types.type_map.get(building_type_id) else {
-                    info!("Propective building type was not found");
-                    continue;
-                };
-                let new_entity = commands
-                    .spawn(SpatialBundle {
-                        transform: Transform::from_xyz(pos.x, pos.y, 0.),
-                        ..Default::default()
-                    })
-                    .id();
-                building_type.construct_building(&mut commands, new_entity);
-                commands.insert_resource(CurrentIntention::None);
-            }
+            let Some(building_type) = building_types.type_map.get(building_type_id) else {
+                info!("Propective building type was not found");
+                continue;
+            };
+            let Some(map_pos) = map_query.snap_to_tile_center(&pos) else {
+                continue;
+            };
+            let new_entity = commands
+                .spawn(SpatialBundle {
+                    transform: Transform::from_translation(map_pos),
+                    ..Default::default()
+                })
+                .id();
+            building_type.construct_building(&mut commands, new_entity);
+            commands.insert_resource(CurrentIntention::None);
         }
-    }
-}
-
-#[derive(Resource)]
-pub struct LevelBounds {
-    pub min: Vec2,
-    pub max: Vec2,
-}
-
-impl LevelBounds {
-    pub fn in_bounds(&self, point: Vec2) -> bool {
-        self.min.x < point.x && self.min.y < point.y && self.max.x > point.x && self.max.y > point.y
     }
 }
 
