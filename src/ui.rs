@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, Align, Align2, Layout, RichText},
+    egui::{self, vec2, Align, Align2, Layout, RichText},
     EguiContexts,
 };
 
@@ -36,12 +36,15 @@ pub fn scoreboard(
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     let score_label = format!("Score: {}", score.0);
-    egui::Window::new("Fruitstar")
+    egui::Window::new("Fruitstar Score")
+        .anchor(Align2::LEFT_BOTTOM, vec2(0.0, 0.0))
         .collapsible(false)
         .movable(false)
-        .interactable(false)
         .resizable(false)
+        .fixed_size(vec2(150.0, 150.0))
         .show(contexts.ctx_mut(), |ui| {
+            ui.set_width(ui.available_width());
+            ui.set_height(ui.available_height());
             ui.label(RichText::new(score_label).text_style(egui::TextStyle::Heading));
             if ui.button("Reset").clicked() {
                 **score = 0;
@@ -69,10 +72,15 @@ pub fn sys_ui_build_board(
     mut commands: Commands,
     building_types: Res<BuildingTypeMap>,
 ) {
-    egui::TopBottomPanel::bottom("control_board")
-        .exact_height(150.0)
+    egui::Window::new("Units")
+        .anchor(Align2::LEFT_BOTTOM, vec2(180.0, 0.0))
         .resizable(false)
+        .collapsible(false)
+        .movable(false)
+        .fixed_size(vec2(450.0, 150.0))
         .show(contexts.ctx_mut(), |ui| {
+            ui.set_width(ui.available_width());
+            ui.set_height(ui.available_height());
             egui::Grid::new("tower_options")
                 .num_columns(1)
                 .show(ui, |ui| {
