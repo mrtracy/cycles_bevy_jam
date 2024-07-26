@@ -16,6 +16,7 @@ use bevy_egui::EguiPlugin;
 use bevy_mod_picking::pointer::{InputPress, PointerButton, PointerId, PointerLocation};
 use bevy_mod_picking::selection::SelectionPluginSettings;
 use bevy_mod_picking::DefaultPickingPlugins;
+use bevy_pancam::{PanCam, PanCamPlugin};
 use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
@@ -77,6 +78,7 @@ fn main() {
         })
         .add_plugins(EguiPlugin)
         .add_plugins(TilemapPlugin)
+        .add_plugins(PanCamPlugin)
         .add_plugins(BuildingTypePlugin)
         .add_plugins(FruitSpeciesPlugin)
         .add_plugins(BuildingPreviewPlugin)
@@ -117,7 +119,14 @@ fn main() {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn((
+        Camera2dBundle::default(),
+        PanCam {
+            grab_buttons: vec![MouseButton::Middle],
+            enabled: true,
+            ..Default::default()
+        },
+    ));
 }
 
 fn setup_game(
