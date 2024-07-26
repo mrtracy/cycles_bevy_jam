@@ -7,8 +7,8 @@ use bevy_egui::{
 };
 
 use crate::{
-    units::{harvester::HarvesterType, BuildingTypeMap, DebugPlantType},
-    GameState, Score,
+    units::{BuildingTypeMap, IntermissionTimer},
+    GameState, PlayState, Score,
 };
 
 pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
@@ -30,7 +30,6 @@ pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<Ga
 }
 
 pub fn scoreboard(
-    mut commands: Commands,
     mut contexts: EguiContexts,
     mut score: ResMut<Score>,
     mut next_state: ResMut<NextState<GameState>>,
@@ -52,18 +51,6 @@ pub fn scoreboard(
             if ui.button("End").clicked() {
                 next_state.set(GameState::GameOver);
             }
-            ui.menu_button("+", |ui| {
-                if ui.button("Harvester").clicked() {
-                    commands.insert_resource(CurrentIntention::Prospective(TypeId::of::<
-                        HarvesterType,
-                    >()))
-                }
-                if ui.button("DebugPlant").clicked() {
-                    commands.insert_resource(CurrentIntention::Prospective(TypeId::of::<
-                        DebugPlantType,
-                    >()))
-                }
-            });
         });
 }
 
@@ -147,6 +134,62 @@ pub fn sys_selected_unit_ui(
                 .show(contexts.ctx_mut(), |ui| {
                     ui.label(format!("Type: {}", building.name()));
                 });
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct UiTitleMessage;
+
+pub fn sys_setup_ui_nodes(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                width: Val::Percent(100.0),
+                height: Val::Px(100.),
+                align_content: AlignContent::Center,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn((
+                UiTitleMessage,
+                TextBundle::from_section(
+                    "FruitStart",
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        ..Default::default()
+                    },
+                ),
+            ));
+        });
+}
+
+pub fn sys_update_ui_title(
+    mut query: Query<&mut Text, With<UiTitleMessage>>,
+    play_state: Res<State<PlayState>>,
+    intermission_timer: Res<IntermissionTimer>,
+) {
+    let Ok(mut text_node) = query.get_single_mut() else {
+        warn!("UI title Text node not found");
+        return;
+    };
+    match play_state.get() {
+        PlayState::Intermission => {
+            text_node.sections[0].value = format!(
+                "Next Wave in {} secs",
+                (intermission_timer.0.duration() - intermission_timer.0.elapsed()).as_secs_f32()
+            );
+        }
+        PlayState::Setup => {
+            text_node.sections[0].value = "".to_string();
+        }
+        PlayState::Wave => {
+            text_node.sections[0].value = "Wave in Progress".to_string();
+        }
+        PlayState::Paused => {
+            text_node.sections[0].value = "Game Paused".to_string();
         }
     }
 }
