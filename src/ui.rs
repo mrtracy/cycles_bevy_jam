@@ -64,6 +64,27 @@ pub fn scoreboard(
         });
 }
 
+pub fn sys_ui_build_board(
+    mut contexts: EguiContexts,
+    mut commands: Commands,
+    building_types: Res<BuildingTypeMap>,
+) {
+    egui::TopBottomPanel::bottom("control_board")
+        .exact_height(150.0)
+        .resizable(false)
+        .show(contexts.ctx_mut(), |ui| {
+            egui::Grid::new("tower_options")
+                .num_columns(1)
+                .show(ui, |ui| {
+                    for (typ, built_type) in building_types.type_map.iter() {
+                        if ui.button(built_type.name()).clicked() {
+                            commands.insert_resource(CurrentIntention::Prospective(*typ));
+                        }
+                    }
+                });
+        });
+}
+
 #[derive(Resource, Default, PartialEq)]
 pub enum CurrentIntention {
     #[default]
@@ -86,7 +107,7 @@ pub fn sys_selected_unit_ui(
             };
             egui::Window::new("Selected Unit")
                 .collapsible(false)
-                .anchor(Align2::LEFT_BOTTOM, egui::vec2(0.0, 0.0))
+                .anchor(Align2::RIGHT_TOP, egui::vec2(0.0, 0.0))
                 .interactable(false)
                 .resizable(false)
                 .show(contexts.ctx_mut(), |ui| {
@@ -99,7 +120,7 @@ pub fn sys_selected_unit_ui(
             };
             egui::Window::new("Command Unit")
                 .collapsible(false)
-                .anchor(Align2::LEFT_BOTTOM, egui::vec2(0.0, 0.0))
+                .anchor(Align2::RIGHT_TOP, egui::vec2(0.0, 0.0))
                 .interactable(false)
                 .resizable(false)
                 .show(contexts.ctx_mut(), |ui| {
@@ -112,7 +133,7 @@ pub fn sys_selected_unit_ui(
             };
             egui::Window::new("Place Unit")
                 .collapsible(false)
-                .anchor(Align2::LEFT_BOTTOM, egui::vec2(0.0, 0.0))
+                .anchor(Align2::RIGHT_TOP, egui::vec2(0.0, 0.0))
                 .interactable(false)
                 .resizable(false)
                 .show(contexts.ctx_mut(), |ui| {
