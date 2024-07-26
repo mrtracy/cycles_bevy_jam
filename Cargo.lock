@@ -635,6 +635,7 @@ dependencies = [
  "bevy_mod_picking",
  "bevy_spatial",
  "pathfinding",
+ "thiserror",
 ]
 
 [[package]]
