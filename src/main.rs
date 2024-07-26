@@ -91,7 +91,7 @@ fn main() {
         .insert_resource(NextWaveQueue::default())
         .init_state::<GameState>()
         .add_sub_state::<PlayState>()
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup, ui::sys_setup_ui_nodes))
         .add_systems(
             Update,
             (
@@ -104,6 +104,7 @@ fn main() {
                     ui::scoreboard,
                     ui::sys_ui_build_board,
                     ui::sys_selected_unit_ui.run_if(not(resource_equals(CurrentIntention::None))),
+                    ui::sys_update_ui_title,
                 )
                     .run_if(in_state(GameState::Playing)),
             ),
