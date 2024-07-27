@@ -1,6 +1,9 @@
 use std::any::TypeId;
 
-use bevy::{math::vec2, prelude::*};
+use bevy::{
+    math::{uvec2, vec2},
+    prelude::*,
+};
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 use bevy_spatial::{kdtree::KDTree2, SpatialAccess};
 
@@ -39,7 +42,10 @@ impl Building for HarvesterType {
             },
             TowerRange(50),
             self.sprite_handle.clone(),
-            Sprite::default(),
+            Sprite {
+                anchor: bevy::sprite::Anchor::TopLeft,
+                ..Default::default()
+            },
             PickableBundle::default(),
             On::<Pointer<Select>>::commands_mut(|event, commands| {
                 commands.insert_resource(CurrentIntention::Command(
@@ -52,6 +58,10 @@ impl Building for HarvesterType {
 
     fn sprite_image(&self) -> &Handle<Image> {
         &self.sprite_handle
+    }
+
+    fn tile_size(&self) -> UVec2 {
+        uvec2(1, 1)
     }
 }
 

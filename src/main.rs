@@ -196,6 +196,7 @@ pub type MapQuery<'w, 's> = Query<
 
 pub trait MapQueryHelpers {
     fn snap_to_tile_center(&self, pos: &Vec2) -> Option<Vec3>;
+    fn tile_center_to_corner(&self) -> Vec3;
 }
 
 impl<'w, 's> MapQueryHelpers for MapQuery<'w, 's> {
@@ -215,6 +216,14 @@ impl<'w, 's> MapQueryHelpers for MapQuery<'w, 's> {
             map_transform.translation()
                 + Vec3::from((clicked_tile.center_in_world(map_grid_size, map_type), 5.0)),
         )
+    }
+
+    fn tile_center_to_corner(&self) -> Vec3 {
+        let Some((_, _, map_grid_size, _)) = self.get_single().ok() else {
+            warn!("Map data not available for placing buildings");
+            return Vec3::ZERO;
+        };
+        Vec3::new(map_grid_size.x, -map_grid_size.y, 0.0) / 2.0
     }
 }
 
@@ -238,9 +247,10 @@ pub fn sys_spawn_on_click(
                 info!("Propective building type was not found");
                 continue;
             };
-            let Some(map_pos) = map_query.snap_to_tile_center(&pos) else {
+            let Some(mut map_pos) = map_query.snap_to_tile_center(&pos) else {
                 continue;
             };
+            map_pos -= map_query.tile_center_to_corner();
             let new_entity = commands
                 .spawn(SpatialBundle {
                     transform: Transform::from_translation(map_pos),

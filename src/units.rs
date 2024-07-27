@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::{any::TypeId, time::Duration};
 
+use bevy::math::uvec2;
 use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapType};
 use harvester::{HarvesterPlugin, HarvesterType};
@@ -21,6 +22,8 @@ pub trait Building: Send + Sync {
     fn construct_building(&self, commands: &mut Commands, target: Entity);
 
     fn sprite_image(&self) -> &Handle<Image>;
+
+    fn tile_size(&self) -> UVec2;
 }
 
 #[derive(Resource, Default)]
@@ -62,6 +65,10 @@ impl Building for DebugPlantType {
 
     fn sprite_image(&self) -> &Handle<Image> {
         &self.sprite_image_handle
+    }
+
+    fn tile_size(&self) -> UVec2 {
+        uvec2(1, 1)
     }
 }
 

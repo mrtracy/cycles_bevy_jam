@@ -26,9 +26,10 @@ pub fn sys_hover_building_effect(
     let Some(pos) = pointers.get_world_pointer_location(PointerId::Mouse) else {
         return;
     };
-    let Some(snapped_pos) = map_query.snap_to_tile_center(&pos) else {
+    let Some(mut snapped_pos) = map_query.snap_to_tile_center(&pos) else {
         return;
     };
+    snapped_pos -= map_query.tile_center_to_corner();
 
     let Some(building_type) = building_types.type_map.get(&typ) else {
         warn!("Sprite data was not found for prospective entity type");
@@ -46,6 +47,7 @@ pub fn sys_hover_building_effect(
                     transform: Transform::from_translation(snapped_pos),
                     sprite: Sprite {
                         color: Color::linear_rgba(0.2, 0.3, 1.0, 0.4),
+                        anchor: bevy::sprite::Anchor::TopLeft,
                         ..Default::default()
                     },
                     ..Default::default()
