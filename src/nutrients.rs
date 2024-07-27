@@ -11,7 +11,7 @@ pub fn sys_setup_nutrients(mut commands: Commands, tile_query: Query<(Entity, &T
     for (tile_ent, passable) in tile_query.iter() {
         commands
             .entity(tile_ent)
-            .insert(TileWater(if !passable.0 { 10000 } else { 0 }));
+            .insert(TileWater(if passable.0 { 1000 } else { 0 }));
     }
 }
 

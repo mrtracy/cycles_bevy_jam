@@ -1,3 +1,5 @@
+use crate::ui::OverlayTilemapMaterial;
+
 use super::GameState;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TilePos;
@@ -68,12 +70,16 @@ fn compute_path_from_grid(grid_data: Grid) -> Result<TilePath, TileMapError> {
     })
 }
 
+#[derive(Resource)]
+pub struct OverlayMaterialResource(pub Handle<OverlayTilemapMaterial>);
+
 pub(crate) fn sys_wait_for_loading_level(
     mut commands: Commands,
     loading_level: Res<LoadingLevel>,
     images: Res<Assets<Image>>,
     asset_server: Res<AssetServer>,
     mut next_game_state: ResMut<NextState<GameState>>,
+    mut material: ResMut<Assets<OverlayTilemapMaterial>>,
 ) {
     use bevy_ecs_tilemap::prelude::*;
 
@@ -123,14 +129,17 @@ pub(crate) fn sys_wait_for_loading_level(
     let grid_size = tile_size.into();
     let map_type = TilemapType::default();
 
+    let overlay_material = material.add(OverlayTilemapMaterial::default());
+
     commands.entity(tilemap_entity).insert((
-        TilemapBundle {
+        MaterialTilemapBundle {
             grid_size,
             map_type,
             size: map_size,
             storage: tile_storage,
             texture: TilemapTexture::Single(texture_handle),
             tile_size,
+            material: overlay_material.clone(),
             transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, -1.0),
             ..Default::default()
         },
@@ -138,6 +147,7 @@ pub(crate) fn sys_wait_for_loading_level(
         tile_path,
     ));
 
+    commands.insert_resource(OverlayMaterialResource(overlay_material));
     commands.remove_resource::<LoadingLevel>();
     next_game_state.set(GameState::Playing);
 }
