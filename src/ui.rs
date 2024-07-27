@@ -1,12 +1,14 @@
 use std::any::TypeId;
 
 use bevy::prelude::*;
+use bevy_ecs_tilemap::tiles::TileColor;
 use bevy_egui::{
     egui::{self, vec2, Align, Align2, Layout, RichText},
     EguiContexts,
 };
 
 use crate::{
+    nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},
     GameState, PlayState, Score,
 };
@@ -33,6 +35,7 @@ pub fn scoreboard(
     mut contexts: EguiContexts,
     mut score: ResMut<Score>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut overlay_mode: ResMut<OverlayMode>,
 ) {
     let score_label = format!("Score: {}", score.0);
     egui::Window::new("Fruitstar Score")
@@ -45,6 +48,12 @@ pub fn scoreboard(
             ui.set_width(ui.available_width());
             ui.set_height(ui.available_height());
             ui.label(RichText::new(score_label).text_style(egui::TextStyle::Heading));
+            if ui.button("Toggle Water Overlay").clicked() {
+                *overlay_mode = match *overlay_mode {
+                    OverlayMode::Normal => OverlayMode::Water,
+                    OverlayMode::Water => OverlayMode::Normal,
+                }
+            }
             if ui.button("Reset").clicked() {
                 **score = 0;
             }
@@ -164,6 +173,32 @@ pub fn sys_setup_ui_nodes(mut commands: Commands, asset_server: Res<AssetServer>
                 ),
             ));
         });
+}
+
+#[derive(Resource)]
+pub enum OverlayMode {
+    Normal,
+    Water,
+}
+
+pub fn sys_show_overlay(
+    mut tile_query: Query<(&mut TileColor, &TileWater)>,
+    overlay_mode: Res<OverlayMode>,
+) {
+    match *overlay_mode {
+        OverlayMode::Normal => {
+            for (mut color, _) in &mut tile_query {
+                if color.0 != Color::default() {
+                    color.0 = Color::default()
+                }
+            }
+        }
+        OverlayMode::Water => {
+            for (mut color, _water_content) in &mut tile_query {
+                color.0 = Color::linear_rgb(0.1, 0.1, 1.0)
+            }
+        }
+    }
 }
 
 pub fn sys_update_ui_title(

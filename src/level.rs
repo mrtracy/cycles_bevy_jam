@@ -19,6 +19,9 @@ pub struct TilePath {
 }
 
 #[derive(Component)]
+pub struct TilePassable(pub bool);
+
+#[derive(Component)]
 pub struct CurrentLevel;
 
 #[derive(Resource)]
@@ -101,12 +104,15 @@ pub(crate) fn sys_wait_for_loading_level(
                 path_grid.add_vertex((x as usize, y as usize));
             }
             let tile_entity = commands
-                .spawn(TileBundle {
-                    position: tile_pos,
-                    tilemap_id: TilemapId(tilemap_entity),
-                    texture_index: TileTextureIndex(if filled { 0 } else { 1 }),
-                    ..Default::default()
-                })
+                .spawn((
+                    TileBundle {
+                        position: tile_pos,
+                        tilemap_id: TilemapId(tilemap_entity),
+                        texture_index: TileTextureIndex(if filled { 0 } else { 1 }),
+                        ..Default::default()
+                    },
+                    TilePassable(filled),
+                ))
                 .id();
             tile_storage.set(&tile_pos, tile_entity);
         }

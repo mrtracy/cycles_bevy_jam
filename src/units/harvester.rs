@@ -43,7 +43,6 @@ impl Building for HarvesterType {
             TowerRange(50),
             self.sprite_handle.clone(),
             Sprite {
-                anchor: bevy::sprite::Anchor::TopLeft,
                 ..Default::default()
             },
             PickableBundle::default(),
