@@ -1,13 +1,17 @@
 use std::any::TypeId;
 
-use bevy::prelude::*;
-use bevy_ecs_tilemap::tiles::TileColor;
+use bevy::{prelude::*, render::render_resource::AsBindGroup};
+use bevy_ecs_tilemap::{
+    prelude::{MaterialTilemap, MaterialTilemapPlugin},
+    tiles::TileColor,
+};
 use bevy_egui::{
     egui::{self, vec2, Align, Align2, Layout, RichText},
     EguiContexts,
 };
 
 use crate::{
+    level::OverlayMaterialResource,
     nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},
     GameState, PlayState, Score,
@@ -175,6 +179,21 @@ pub fn sys_setup_ui_nodes(mut commands: Commands, asset_server: Res<AssetServer>
         });
 }
 
+#[derive(AsBindGroup, TypePath, Debug, Clone, Default, Asset)]
+pub struct OverlayTilemapMaterial {
+    #[uniform(0)]
+    pub show_overlay: u32,
+    // webgl2 requires 16 byte alignment
+    #[uniform(0)]
+    pub _padding: Vec3,
+}
+
+impl MaterialTilemap for OverlayTilemapMaterial {
+    fn fragment_shader() -> bevy::render::render_resource::ShaderRef {
+        "tile_color_shader.wgsl".into()
+    }
+}
+
 #[derive(Resource)]
 pub enum OverlayMode {
     Normal,
@@ -184,9 +203,15 @@ pub enum OverlayMode {
 pub fn sys_show_overlay(
     mut tile_query: Query<(&mut TileColor, &TileWater)>,
     overlay_mode: Res<OverlayMode>,
+    overlay_material: Res<OverlayMaterialResource>,
+    mut materials: ResMut<Assets<OverlayTilemapMaterial>>,
 ) {
     match *overlay_mode {
         OverlayMode::Normal => {
+            materials
+                .get_mut(overlay_material.0.id())
+                .unwrap()
+                .show_overlay = 0;
             for (mut color, _) in &mut tile_query {
                 if color.0 != Color::default() {
                     color.0 = Color::default()
@@ -194,8 +219,12 @@ pub fn sys_show_overlay(
             }
         }
         OverlayMode::Water => {
-            for (mut color, _water_content) in &mut tile_query {
-                color.0 = Color::linear_rgb(0.1, 0.1, 1.0)
+            materials
+                .get_mut(overlay_material.0.id())
+                .unwrap()
+                .show_overlay = 1;
+            for (mut color, water_content) in &mut tile_query {
+                color.0 = Color::linear_rgb(0.0, 0.0, (water_content.0 / 1000) as f32)
             }
         }
     }
@@ -226,6 +255,14 @@ pub fn sys_update_ui_title(
         PlayState::Paused => {
             text_node.sections[0].value = "Game Paused".to_string();
         }
+    }
+}
+
+pub struct UiPlugin;
+
+impl Plugin for UiPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(MaterialTilemapPlugin::<OverlayTilemapMaterial>::default());
     }
 }
 

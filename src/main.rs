@@ -85,6 +85,7 @@ fn main() {
         .add_plugins(BuildingTypePlugin)
         .add_plugins(FruitSpeciesPlugin)
         .add_plugins(BuildingPreviewPlugin)
+        .add_plugins(ui::UiPlugin)
         .insert_resource(Score(0))
         .insert_resource(CurrentIntention::None)
         .insert_resource(NextWaveQueue::default())
