@@ -21,7 +21,8 @@ use bevy_pancam::{PanCam, PanCamPlugin};
 use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
-use ui::CurrentIntention;
+use nutrients::NutrientPlugin;
+use ui::{CurrentIntention, OverlayMode};
 use units::{
     BuildingTypeMap, BuildingTypePlugin, CurrentWave, DebugPlantType, IntermissionTimer,
     NextWaveQueue,
@@ -31,6 +32,7 @@ mod construction_preview;
 mod fruit;
 mod fruit_type;
 mod level;
+mod nutrients;
 mod tree;
 mod ui;
 mod units;
@@ -88,6 +90,7 @@ fn main() {
         .insert_resource(NextWaveQueue::default())
         .init_state::<GameState>()
         .add_sub_state::<PlayState>()
+        .insert_resource(OverlayMode::Normal)
         .add_systems(Startup, (setup, ui::sys_setup_ui_nodes))
         .add_systems(
             Update,
@@ -101,12 +104,14 @@ fn main() {
                     ui::sys_ui_build_board,
                     ui::sys_selected_unit_ui.run_if(not(resource_equals(CurrentIntention::None))),
                     ui::sys_update_ui_title,
+                    ui::sys_show_overlay,
                 )
                     .run_if(in_state(GameState::Playing)),
             ),
         )
         .add_systems(OnEnter(GameState::Loading), level::kickoff_load)
         .add_systems(OnEnter(PlayState::Setup), setup_game)
+        .add_plugins(NutrientPlugin)
         .add_systems(
             Update,
             level::sys_wait_for_loading_level.run_if(in_state(GameState::Loading)),
@@ -126,7 +131,7 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-fn setup_game(
+pub(crate) fn setup_game(
     mut commands: Commands,
     buildings: Res<BuildingTypeMap>,
     mut next_play_state: ResMut<NextState<PlayState>>,
@@ -250,7 +255,7 @@ pub fn sys_spawn_on_click(
             let Some(mut map_pos) = map_query.snap_to_tile_center(&pos) else {
                 continue;
             };
-            map_pos -= map_query.tile_center_to_corner();
+            map_pos += map_query.tile_center_to_corner();
             let new_entity = commands
                 .spawn(SpatialBundle {
                     transform: Transform::from_translation(map_pos),
