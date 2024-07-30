@@ -161,9 +161,6 @@ pub fn sys_follow_tile_path(
     }
 }
 
-#[derive(Component)]
-pub struct QueuedForNextWave;
-
 #[derive(Resource, Default)]
 pub struct NextWaveQueue(pub Vec<Entity>);
 

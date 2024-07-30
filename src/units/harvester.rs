@@ -1,9 +1,6 @@
 use std::any::TypeId;
 
-use bevy::{
-    math::{uvec2, vec2},
-    prelude::*,
-};
+use bevy::{math::uvec2, prelude::*};
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 use bevy_spatial::{kdtree::KDTree2, SpatialAccess};
 
@@ -17,9 +14,7 @@ use crate::{
 use super::TowerRange;
 
 #[derive(Component)]
-pub struct Harvester {
-    pub target: Vec2,
-}
+pub struct Harvester;
 
 #[derive(Default)]
 pub struct HarvesterType {
@@ -37,9 +32,7 @@ impl Building for HarvesterType {
 
     fn construct_building(&self, commands: &mut Commands, target: Entity) {
         commands.entity(target).insert((
-            Harvester {
-                target: vec2(0., 0.),
-            },
+            Harvester,
             TowerRange(50),
             self.sprite_handle.clone(),
             Sprite {
