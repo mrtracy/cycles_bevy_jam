@@ -36,6 +36,7 @@ mod nutrients;
 mod tree;
 mod ui;
 mod units;
+mod voting;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
@@ -86,9 +87,11 @@ fn main() {
         .add_plugins(FruitSpeciesPlugin)
         .add_plugins(BuildingPreviewPlugin)
         .add_plugins(ui::UiPlugin)
+        .add_plugins(voting::VotingPlugin)
         .insert_resource(Score(0))
         .insert_resource(CurrentIntention::None)
         .insert_resource(NextWaveQueue::default())
+        .insert_resource(Level::default())
         .init_state::<GameState>()
         .add_sub_state::<PlayState>()
         .insert_resource(OverlayMode::Normal)
@@ -107,15 +110,23 @@ fn main() {
                     ui::sys_update_ui_title,
                     ui::sys_show_overlay,
                 )
-                    .run_if(in_state(GameState::Playing)),
+                    .run_if(
+                        in_state(GameState::Playing)
+                            .and_then(move |res: Res<Level>| (*res).level == 0),
+                    ),
             ),
         )
-        .add_systems(OnEnter(GameState::Loading), level::kickoff_load)
+        .add_systems(
+            OnEnter(GameState::Loading),
+            level::kickoff_load.run_if(move |res: Res<Level>| (*res).level == 0),
+        )
         .add_systems(OnEnter(PlayState::Setup), setup_game)
         .add_plugins(NutrientPlugin)
         .add_systems(
             Update,
-            level::sys_wait_for_loading_level.run_if(in_state(GameState::Loading)),
+            level::sys_wait_for_loading_level.run_if(
+                in_state(GameState::Loading).and_then(move |res: Res<Level>| (*res).level == 0),
+            ),
         )
         .observe(fruit::obs_fruit_harvested)
         .run();
@@ -271,3 +282,8 @@ pub fn sys_spawn_on_click(
 
 #[derive(Resource, Deref, DerefMut)]
 pub struct Score(usize);
+
+#[derive(Resource, Default, Deref, DerefMut)]
+pub struct Level {
+    level: usize,
+}

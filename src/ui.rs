@@ -14,10 +14,14 @@ use crate::{
     level::OverlayMaterialResource,
     nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},
-    GameState, PlayState, Score,
+    voting, GameState, PlayState, Score,
 };
 
-pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
+pub fn main_menu(
+    mut contexts: EguiContexts,
+    mut next_state: ResMut<NextState<GameState>>,
+    mut commands: Commands,
+) {
     egui::CentralPanel::default()
         .frame(egui::Frame::none())
         .show(contexts.ctx_mut(), |ui| {
@@ -30,6 +34,14 @@ pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<Ga
                     .clicked()
                 {
                     next_state.set(GameState::Loading);
+                }
+
+                if ui
+                    .button(RichText::new("Start Better").text_style(egui::TextStyle::Heading))
+                    .clicked()
+                {
+                    next_state.set(GameState::Loading);
+                    commands.insert_resource(super::Level { level: 1 });
                 }
             });
         });
