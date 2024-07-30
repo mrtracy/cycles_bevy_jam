@@ -20,6 +20,10 @@ use bevy::{
     },
     transform::components::Transform,
 };
+use bevy_rapier2d::{
+    dynamics::{Damping, GravityScale, RigidBody},
+    geometry::Collider,
+};
 
 use crate::GameState;
 
@@ -57,6 +61,13 @@ impl Guard {
                 },
                 ..Default::default()
             },
+            RigidBody::Dynamic,
+            Collider::ball(10.),
+            Damping {
+                linear_damping: 2.0,
+                angular_damping: 2.0,
+            },
+            GravityScale(0.),
             Guard::default(),
         )
     }
@@ -75,6 +86,9 @@ impl Player {
                 },
                 ..Default::default()
             },
+            RigidBody::KinematicPositionBased,
+            Collider::ball(10.),
+            GravityScale(0.),
             Player::default(),
         )
     }

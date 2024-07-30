@@ -18,6 +18,8 @@ use bevy_mod_picking::pointer::{InputPress, PointerButton, PointerId, PointerLoc
 use bevy_mod_picking::selection::SelectionPluginSettings;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_pancam::{PanCam, PanCamPlugin};
+use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
+use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
@@ -88,6 +90,8 @@ fn main() {
         .add_plugins(BuildingPreviewPlugin)
         .add_plugins(ui::UiPlugin)
         .add_plugins(voting::VotingPlugin)
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugins(RapierDebugRenderPlugin::default())
         .insert_resource(Score(0))
         .insert_resource(CurrentIntention::None)
         .insert_resource(NextWaveQueue::default())
