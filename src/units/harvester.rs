@@ -8,7 +8,7 @@ use crate::{
     fruit::{FruitGrowthState, HarvestFruitEvent},
     ui::CurrentIntention,
     units::Building,
-    GameState, SpatialTracked,
+    AppState, GameType, SpatialTracked,
 };
 
 use super::TowerRange;
@@ -87,7 +87,7 @@ impl Plugin for HarvesterPlugin {
                 // sys_harvester_target_set,
                 // sys_harvester_move_to_target,
             )
-                .run_if(in_state(GameState::Playing)),
+                .run_if(in_state(AppState::Playing(GameType::NormalGame))),
         );
     }
 }

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{level::TilePassable, GameState};
+use crate::{level::TilePassable, PlayState};
 
 #[derive(Component)]
 pub struct TileWater(pub u32);
@@ -17,6 +17,6 @@ pub fn sys_setup_nutrients(mut commands: Commands, tile_query: Query<(Entity, &T
 
 impl Plugin for NutrientPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), sys_setup_nutrients);
+        app.add_systems(OnEnter(PlayState::Setup), sys_setup_nutrients);
     }
 }

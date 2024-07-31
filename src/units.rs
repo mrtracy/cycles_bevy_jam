@@ -7,12 +7,12 @@ use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapType};
 use harvester::{HarvesterPlugin, HarvesterType};
 
 use crate::ui::CurrentIntention;
-use crate::PlayState;
 use crate::{
     fruit::{FruitBranch, FruitBranchBundle},
     level::{CurrentLevel, TilePath},
-    tree, GameState,
+    tree, AppState,
 };
+use crate::{GameType, PlayState};
 
 pub trait Building: Send + Sync {
     fn init_assets(&mut self, asset_server: &AssetServer);
@@ -99,7 +99,8 @@ impl Plugin for BuildingTypePlugin {
         app.add_systems(Startup, sys_setup_building_types)
             .add_systems(
                 Update,
-                (sys_follow_tile_path, sys_show_tower_range).run_if(in_state(GameState::Playing)),
+                (sys_follow_tile_path, sys_show_tower_range)
+                    .run_if(in_state(AppState::Playing(GameType::NormalGame))),
             )
             .add_systems(
                 Update,

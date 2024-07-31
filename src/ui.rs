@@ -14,14 +14,10 @@ use crate::{
     level::OverlayMaterialResource,
     nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},
-    GameState, PlayState, Score,
+    AppState, GameType, PlayState, Score,
 };
 
-pub fn main_menu(
-    mut contexts: EguiContexts,
-    mut next_state: ResMut<NextState<GameState>>,
-    mut commands: Commands,
-) {
+pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<AppState>>) {
     egui::CentralPanel::default()
         .frame(egui::Frame::none())
         .show(contexts.ctx_mut(), |ui| {
@@ -33,15 +29,14 @@ pub fn main_menu(
                     .button(RichText::new("Start").text_style(egui::TextStyle::Heading))
                     .clicked()
                 {
-                    next_state.set(GameState::Loading);
+                    next_state.set(AppState::Playing(GameType::NormalGame));
                 }
 
                 if ui
                     .button(RichText::new("Start Better").text_style(egui::TextStyle::Heading))
                     .clicked()
                 {
-                    next_state.set(GameState::Loading);
-                    commands.insert_resource(super::Level { level: 1 });
+                    next_state.set(AppState::Playing(GameType::TimsGame));
                 }
             });
         });
@@ -50,7 +45,6 @@ pub fn main_menu(
 pub fn scoreboard(
     mut contexts: EguiContexts,
     mut score: ResMut<Score>,
-    mut next_state: ResMut<NextState<GameState>>,
     mut overlay_mode: ResMut<OverlayMode>,
 ) {
     let score_label = format!("Score: {}", score.0);
@@ -72,9 +66,6 @@ pub fn scoreboard(
             }
             if ui.button("Reset").clicked() {
                 **score = 0;
-            }
-            if ui.button("End").clicked() {
-                next_state.set(GameState::GameOver);
             }
         });
 }

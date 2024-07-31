@@ -1,6 +1,5 @@
-use crate::ui::OverlayTilemapMaterial;
+use crate::{ui::OverlayTilemapMaterial, PlayState};
 
-use super::GameState;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TilePos;
 use pathfinding::{directed::dfs, grid::Grid};
@@ -78,7 +77,7 @@ pub(crate) fn sys_wait_for_loading_level(
     loading_level: Res<LoadingLevel>,
     images: Res<Assets<Image>>,
     asset_server: Res<AssetServer>,
-    mut next_game_state: ResMut<NextState<GameState>>,
+    mut next_game_state: ResMut<NextState<PlayState>>,
     mut material: ResMut<Assets<OverlayTilemapMaterial>>,
 ) {
     use bevy_ecs_tilemap::prelude::*;
@@ -149,5 +148,5 @@ pub(crate) fn sys_wait_for_loading_level(
 
     commands.insert_resource(OverlayMaterialResource(overlay_material));
     commands.remove_resource::<LoadingLevel>();
-    next_game_state.set(GameState::Playing);
+    next_game_state.set(PlayState::Intermission);
 }

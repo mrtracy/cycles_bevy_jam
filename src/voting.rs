@@ -4,7 +4,7 @@ use bevy::{
     ecs::{
         bundle::Bundle,
         query::With,
-        schedule::{Condition, IntoSystemConfigs},
+        schedule::IntoSystemConfigs,
         system::{Commands, Query, Res, ResMut},
     },
     gizmos::gizmos,
@@ -20,7 +20,7 @@ use bevy_rapier2d::{
     geometry::Collider,
 };
 
-use crate::GameState;
+use crate::TimsGameState;
 
 pub struct VotingPlugin;
 
@@ -28,17 +28,11 @@ impl Plugin for VotingPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_systems(
             Update,
-            (sys_init_level).run_if(
-                in_state(super::GameState::Loading)
-                    .and_then(move |res: Res<super::Level>| res.level == 1),
-            ),
+            (sys_init_level).run_if(in_state(super::TimsGameState::Setup)),
         )
         .add_systems(
             Update,
-            (sys_draw_guards, sys_move_draw_player).run_if(
-                in_state(super::GameState::Playing)
-                    .and_then(move |res: Res<super::Level>| res.level == 1),
-            ),
+            (sys_draw_guards, sys_move_draw_player).run_if(in_state(TimsGameState::Playing)),
         );
     }
 }
@@ -89,10 +83,10 @@ impl Player {
     }
 }
 
-fn sys_init_level(mut next_play_state: ResMut<NextState<GameState>>, mut commands: Commands) {
+fn sys_init_level(mut next_play_state: ResMut<NextState<TimsGameState>>, mut commands: Commands) {
     commands.spawn(Guard::instantiate(Vec2 { x: 20., y: 20. }));
     commands.spawn(Player::instantiate(Vec2 { x: 0., y: 0. }));
-    next_play_state.set(GameState::Playing);
+    next_play_state.set(TimsGameState::Playing);
 }
 
 fn sys_move_draw_player(

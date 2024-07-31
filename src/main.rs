@@ -4,7 +4,6 @@
 // Feel free to delete this line.
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
-use std::any::TypeId;
 use std::time::Duration;
 
 use bevy::asset::AssetMetaCheck;
@@ -23,39 +22,53 @@ use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
 use construction_preview::BuildingPreviewPlugin;
 use fruit_type::FruitSpeciesPlugin;
+use normal_game::NormalGamePlugin;
 use nutrients::NutrientPlugin;
 use ui::{CurrentIntention, OverlayMode};
-use units::{
-    BuildingTypeMap, BuildingTypePlugin, CurrentWave, DebugPlantType, IntermissionTimer,
-    NextWaveQueue,
-};
+use units::{BuildingTypeMap, BuildingTypePlugin, NextWaveQueue};
 
 mod construction_preview;
 mod fruit;
 mod fruit_type;
 mod level;
+mod normal_game;
 mod nutrients;
 mod tree;
 mod ui;
 mod units;
 mod voting;
 
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum GameType {
+    #[default]
+    NormalGame,
+    TimsGame,
+}
+
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum GameState {
+pub enum AppState {
+    Init,
     #[default]
     MainMenu,
-    Loading,
-    Playing,
-    GameOver,
+    Playing(GameType),
 }
 
 #[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
-#[source(GameState=GameState::Playing)]
+#[source(AppState=AppState::Playing(GameType::NormalGame))]
 pub enum PlayState {
     #[default]
     Setup,
     Intermission,
     Wave,
+    Paused,
+}
+
+#[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
+#[source(AppState=AppState::Playing(GameType::TimsGame))]
+pub enum TimsGameState {
+    #[default]
+    Setup,
+    Playing,
     Paused,
 }
 
@@ -96,14 +109,15 @@ fn main() {
         .insert_resource(CurrentIntention::None)
         .insert_resource(NextWaveQueue::default())
         .insert_resource(Level::default())
-        .init_state::<GameState>()
+        .init_state::<AppState>()
         .add_sub_state::<PlayState>()
+        .add_sub_state::<TimsGameState>()
         .insert_resource(OverlayMode::Normal)
         .add_systems(Startup, (setup, ui::sys_setup_ui_nodes))
         .add_systems(
             Update,
             (
-                (ui::main_menu).run_if(in_state(GameState::MainMenu)),
+                (ui::main_menu).run_if(in_state(AppState::MainMenu)),
                 (
                     sys_spawn_on_click,
                     fruit::sys_fruit_branch_spawn_fruit,
@@ -114,24 +128,11 @@ fn main() {
                     ui::sys_update_ui_title,
                     ui::sys_show_overlay,
                 )
-                    .run_if(
-                        in_state(GameState::Playing)
-                            .and_then(move |res: Res<Level>| res.level == 0),
-                    ),
+                    .run_if(in_state(PlayState::Wave).or_else(in_state(PlayState::Intermission))),
             ),
         )
-        .add_systems(
-            OnEnter(GameState::Loading),
-            level::kickoff_load.run_if(move |res: Res<Level>| res.level == 0),
-        )
-        .add_systems(OnEnter(PlayState::Setup), setup_game)
         .add_plugins(NutrientPlugin)
-        .add_systems(
-            Update,
-            level::sys_wait_for_loading_level.run_if(
-                in_state(GameState::Loading).and_then(move |res: Res<Level>| res.level == 0),
-            ),
-        )
+        .add_plugins(NormalGamePlugin)
         .observe(fruit::obs_fruit_harvested)
         .run();
 }
@@ -145,39 +146,6 @@ fn setup(mut commands: Commands) {
             ..Default::default()
         },
     ));
-}
-
-pub(crate) fn setup_game(
-    mut commands: Commands,
-    buildings: Res<BuildingTypeMap>,
-    mut next_play_state: ResMut<NextState<PlayState>>,
-) {
-    let tree_type = buildings
-        .type_map
-        .get(&TypeId::of::<DebugPlantType>())
-        .unwrap();
-    let mut initial_unit_queue = vec![];
-    for _ in 0..10 {
-        let target = commands
-            .spawn(SpatialBundle {
-                transform: Transform::from_xyz(-10000.0, 0., 0.),
-                visibility: Visibility::Hidden,
-                ..Default::default()
-            })
-            .id();
-        tree_type.construct_building(&mut commands, target);
-        commands.entity(target).insert(Visibility::Hidden);
-        initial_unit_queue.push(target);
-    }
-    commands.insert_resource(NextWaveQueue(initial_unit_queue));
-    commands.insert_resource(CurrentWave::new(Duration::from_secs(1)));
-    commands.insert_resource(IntermissionTimer(Timer::new(
-        Duration::from_secs(3),
-        TimerMode::Once,
-    )));
-
-    info!("Setup game complete!");
-    next_play_state.set(PlayState::Intermission);
 }
 
 #[derive(SystemParam)]
