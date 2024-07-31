@@ -14,7 +14,7 @@ use crate::{
     level::OverlayMaterialResource,
     nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},
-    voting, GameState, PlayState, Score,
+    GameState, PlayState, Score,
 };
 
 pub fn main_menu(

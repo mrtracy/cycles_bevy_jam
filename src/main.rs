@@ -116,20 +116,20 @@ fn main() {
                 )
                     .run_if(
                         in_state(GameState::Playing)
-                            .and_then(move |res: Res<Level>| (*res).level == 0),
+                            .and_then(move |res: Res<Level>| res.level == 0),
                     ),
             ),
         )
         .add_systems(
             OnEnter(GameState::Loading),
-            level::kickoff_load.run_if(move |res: Res<Level>| (*res).level == 0),
+            level::kickoff_load.run_if(move |res: Res<Level>| res.level == 0),
         )
         .add_systems(OnEnter(PlayState::Setup), setup_game)
         .add_plugins(NutrientPlugin)
         .add_systems(
             Update,
             level::sys_wait_for_loading_level.run_if(
-                in_state(GameState::Loading).and_then(move |res: Res<Level>| (*res).level == 0),
+                in_state(GameState::Loading).and_then(move |res: Res<Level>| res.level == 0),
             ),
         )
         .observe(fruit::obs_fruit_harvested)

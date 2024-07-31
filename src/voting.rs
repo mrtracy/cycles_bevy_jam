@@ -3,21 +3,16 @@ use bevy::{
     color::Color,
     ecs::{
         bundle::Bundle,
-        component::Component,
         query::With,
-        schedule::{common_conditions::resource_equals, Condition, IntoSystemConfigs},
+        schedule::{Condition, IntoSystemConfigs},
         system::{Commands, Query, Res, ResMut},
     },
     gizmos::gizmos,
     input::{keyboard::KeyCode, ButtonInput},
-    math::{Quat, Vec2, Vec3Swizzles},
-    prelude::{default, SpatialBundle},
-    render::view::{InheritedVisibility, Visibility},
-    state::{
-        app::AppExtStates,
-        condition::in_state,
-        state::{NextState, States},
-    },
+    math::{Vec2, Vec3Swizzles},
+    prelude::{Component, SpatialBundle},
+    render::view::InheritedVisibility,
+    state::{condition::in_state, state::NextState},
     transform::components::Transform,
 };
 use bevy_rapier2d::{
@@ -35,14 +30,14 @@ impl Plugin for VotingPlugin {
             Update,
             (sys_init_level).run_if(
                 in_state(super::GameState::Loading)
-                    .and_then(move |res: Res<super::Level>| (*res).level == 1),
+                    .and_then(move |res: Res<super::Level>| res.level == 1),
             ),
         )
         .add_systems(
             Update,
             (sys_draw_guards, sys_move_draw_player).run_if(
                 in_state(super::GameState::Playing)
-                    .and_then(move |res: Res<super::Level>| (*res).level == 1),
+                    .and_then(move |res: Res<super::Level>| res.level == 1),
             ),
         );
     }
