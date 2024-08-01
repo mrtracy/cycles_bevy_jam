@@ -11,7 +11,7 @@ use bevy_egui::{
 };
 
 use crate::{
-    level::OverlayMaterialResource,
+    level_map::OverlayMaterialResource,
     normal_game::PlayState,
     nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},

@@ -14,15 +14,6 @@ use thiserror::Error;
 //
 
 #[derive(Component)]
-pub struct TilePath {
-    #[allow(dead_code)]
-    pub path: Vec<TilePos>,
-}
-
-#[derive(Component)]
-pub struct TilePassable(pub bool);
-
-#[derive(Component)]
 pub struct CurrentLevel;
 
 #[derive(Resource)]
@@ -31,46 +22,6 @@ pub struct LoadingLevel(pub Handle<Image>);
 pub(crate) fn kickoff_load(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(LoadingLevel(asset_server.load("levels/level1.png")));
 }
-
-#[derive(Error, Debug)]
-pub enum TileMapError {
-    #[error("No starting point was available on the proposed map.")]
-    NoStart,
-    #[error("No path was found from starting point to the end of the map.")]
-    NoPathToEnd,
-}
-
-fn compute_path_from_grid(grid_data: Grid) -> Result<TilePath, TileMapError> {
-    let start = 'findstart: {
-        let x = grid_data.width - 1;
-        for y in 0..grid_data.height - 1 {
-            if grid_data.has_vertex((x, y)) {
-                break 'findstart Some((x, y));
-            }
-        }
-        None
-    };
-    let Some(start) = start else {
-        return Err(TileMapError::NoStart);
-    };
-
-    let Some(path) = dfs::dfs(start, |p| grid_data.neighbours(*p), |p| p.0 == 0) else {
-        return Err(TileMapError::NoPathToEnd);
-    };
-
-    Ok(TilePath {
-        path: path
-            .into_iter()
-            .map(|(x, y)| TilePos {
-                x: x as u32,
-                y: y as u32,
-            })
-            .collect(),
-    })
-}
-
-#[derive(Resource)]
-pub struct OverlayMaterialResource(pub Handle<OverlayTilemapMaterial>);
 
 pub(crate) fn sys_wait_for_loading_level(
     mut commands: Commands,
@@ -150,3 +101,52 @@ pub(crate) fn sys_wait_for_loading_level(
     commands.remove_resource::<LoadingLevel>();
     next_game_state.set(PlayState::Intermission);
 }
+
+#[derive(Component)]
+pub struct TilePath {
+    #[allow(dead_code)]
+    pub path: Vec<TilePos>,
+}
+
+#[derive(Component)]
+pub struct TilePassable(pub bool);
+
+#[derive(Error, Debug)]
+pub enum TileMapError {
+    #[error("No starting point was available on the proposed map.")]
+    NoStart,
+    #[error("No path was found from starting point to the end of the map.")]
+    NoPathToEnd,
+}
+
+fn compute_path_from_grid(grid_data: Grid) -> Result<TilePath, TileMapError> {
+    let start = 'findstart: {
+        let x = grid_data.width - 1;
+        for y in 0..grid_data.height - 1 {
+            if grid_data.has_vertex((x, y)) {
+                break 'findstart Some((x, y));
+            }
+        }
+        None
+    };
+    let Some(start) = start else {
+        return Err(TileMapError::NoStart);
+    };
+
+    let Some(path) = dfs::dfs(start, |p| grid_data.neighbours(*p), |p| p.0 == 0) else {
+        return Err(TileMapError::NoPathToEnd);
+    };
+
+    Ok(TilePath {
+        path: path
+            .into_iter()
+            .map(|(x, y)| TilePos {
+                x: x as u32,
+                y: y as u32,
+            })
+            .collect(),
+    })
+}
+
+#[derive(Resource)]
+pub struct OverlayMaterialResource(pub Handle<OverlayTilemapMaterial>);

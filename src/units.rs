@@ -9,7 +9,7 @@ use harvester::{HarvesterPlugin, HarvesterType};
 use crate::ui::CurrentIntention;
 use crate::{
     fruit::{FruitBranch, FruitBranchBundle},
-    level::{CurrentLevel, TilePath},
+    level_map::{CurrentLevel, TilePath},
     tree, AppState,
 };
 use crate::{normal_game::PlayState, GameType};

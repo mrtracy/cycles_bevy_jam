@@ -4,7 +4,7 @@ use crate::{
     construction_preview::BuildingPreviewPlugin,
     fruit,
     fruit_type::FruitSpeciesPlugin,
-    level,
+    level_map,
     nutrients::NutrientPlugin,
     ui::{self, CurrentIntention, OverlayMode},
     units::{
@@ -55,7 +55,7 @@ pub struct NormalGamePlugin;
 
 impl Plugin for NormalGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(PlayState::Setup), level::kickoff_load)
+        app.add_systems(OnEnter(PlayState::Setup), level_map::kickoff_load)
             .add_sub_state::<PlayState>()
             .add_plugins(BuildingTypePlugin)
             .add_plugins(FruitSpeciesPlugin)
@@ -64,7 +64,7 @@ impl Plugin for NormalGamePlugin {
             .add_systems(OnEnter(PlayState::Setup), setup_game)
             .add_systems(
                 Update,
-                level::sys_wait_for_loading_level.run_if(in_state(PlayState::Setup)),
+                level_map::sys_wait_for_loading_level.run_if(in_state(PlayState::Setup)),
             )
             .add_systems(
                 Update,

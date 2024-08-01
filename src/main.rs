@@ -27,7 +27,7 @@ use units::NextWaveQueue;
 mod construction_preview;
 mod fruit;
 mod fruit_type;
-mod level;
+mod level_map;
 mod normal_game;
 mod nutrients;
 mod tree;
