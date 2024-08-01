@@ -13,19 +13,16 @@ use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize, TilemapType};
 use bevy_ecs_tilemap::tiles::TilePos;
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_egui::EguiPlugin;
-use bevy_mod_picking::pointer::{InputPress, PointerButton, PointerId, PointerLocation};
+use bevy_mod_picking::pointer::{PointerId, PointerLocation};
 use bevy_mod_picking::selection::SelectionPluginSettings;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_pancam::{PanCam, PanCamPlugin};
 use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
-use construction_preview::BuildingPreviewPlugin;
-use fruit_type::FruitSpeciesPlugin;
 use normal_game::NormalGamePlugin;
-use nutrients::NutrientPlugin;
-use ui::{CurrentIntention, OverlayMode};
-use units::{BuildingTypeMap, BuildingTypePlugin, NextWaveQueue};
+use ui::CurrentIntention;
+use units::NextWaveQueue;
 
 mod construction_preview;
 mod fruit;
@@ -51,16 +48,6 @@ pub enum AppState {
     #[default]
     MainMenu,
     Playing(GameType),
-}
-
-#[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
-#[source(AppState=AppState::Playing(GameType::NormalGame))]
-pub enum PlayState {
-    #[default]
-    Setup,
-    Intermission,
-    Wave,
-    Paused,
 }
 
 #[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -98,9 +85,6 @@ fn main() {
         .add_plugins(EguiPlugin)
         .add_plugins(TilemapPlugin)
         .add_plugins(PanCamPlugin)
-        .add_plugins(BuildingTypePlugin)
-        .add_plugins(FruitSpeciesPlugin)
-        .add_plugins(BuildingPreviewPlugin)
         .add_plugins(ui::UiPlugin)
         .add_plugins(voting::VotingPlugin)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
@@ -110,30 +94,13 @@ fn main() {
         .insert_resource(NextWaveQueue::default())
         .insert_resource(Level::default())
         .init_state::<AppState>()
-        .add_sub_state::<PlayState>()
         .add_sub_state::<TimsGameState>()
-        .insert_resource(OverlayMode::Normal)
         .add_systems(Startup, (setup, ui::sys_setup_ui_nodes))
         .add_systems(
             Update,
-            (
-                (ui::main_menu).run_if(in_state(AppState::MainMenu)),
-                (
-                    sys_spawn_on_click,
-                    fruit::sys_fruit_branch_spawn_fruit,
-                    fruit::sys_fruit_grow,
-                    ui::scoreboard,
-                    ui::sys_ui_build_board,
-                    ui::sys_selected_unit_ui.run_if(not(resource_equals(CurrentIntention::None))),
-                    ui::sys_update_ui_title,
-                    ui::sys_show_overlay,
-                )
-                    .run_if(in_state(PlayState::Wave).or_else(in_state(PlayState::Intermission))),
-            ),
+            ((ui::main_menu).run_if(in_state(AppState::MainMenu)),),
         )
-        .add_plugins(NutrientPlugin)
         .add_plugins(NormalGamePlugin)
-        .observe(fruit::obs_fruit_harvested)
         .run();
 }
 
@@ -213,42 +180,6 @@ impl<'w, 's> MapQueryHelpers for MapQuery<'w, 's> {
             return Vec3::ZERO;
         };
         Vec3::new(map_grid_size.x, -map_grid_size.y, 0.0) / 2.0
-    }
-}
-
-pub fn sys_spawn_on_click(
-    mut commands: Commands,
-    mut press_events: EventReader<InputPress>,
-    pointers: CameraPointerParam,
-    current_inspector: Res<CurrentIntention>,
-    map_query: MapQuery,
-    building_types: Res<BuildingTypeMap>,
-) {
-    for press in press_events
-        .read()
-        .filter(|p| p.is_just_down(PointerButton::Primary))
-    {
-        let Some(pos) = pointers.get_world_pointer_location(press.pointer_id) else {
-            continue;
-        };
-        if let CurrentIntention::Prospective(ref building_type_id) = *current_inspector {
-            let Some(building_type) = building_types.type_map.get(building_type_id) else {
-                info!("Propective building type was not found");
-                continue;
-            };
-            let Some(mut map_pos) = map_query.snap_to_tile_center(&pos) else {
-                continue;
-            };
-            map_pos += map_query.tile_center_to_corner();
-            let new_entity = commands
-                .spawn(SpatialBundle {
-                    transform: Transform::from_translation(map_pos),
-                    ..Default::default()
-                })
-                .id();
-            building_type.construct_building(&mut commands, new_entity);
-            commands.insert_resource(CurrentIntention::None);
-        }
     }
 }
 

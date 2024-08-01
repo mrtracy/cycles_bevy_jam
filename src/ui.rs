@@ -12,9 +12,10 @@ use bevy_egui::{
 
 use crate::{
     level::OverlayMaterialResource,
+    normal_game::PlayState,
     nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},
-    AppState, GameType, PlayState, Score,
+    AppState, GameType, Score,
 };
 
 pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<AppState>>) {
@@ -254,9 +255,6 @@ pub fn sys_update_ui_title(
         }
         PlayState::Wave => {
             text_node.sections[0].value = "Wave in Progress".to_string();
-        }
-        PlayState::Paused => {
-            text_node.sections[0].value = "Game Paused".to_string();
         }
     }
 }

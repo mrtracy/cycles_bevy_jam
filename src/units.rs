@@ -12,7 +12,7 @@ use crate::{
     level::{CurrentLevel, TilePath},
     tree, AppState,
 };
-use crate::{GameType, PlayState};
+use crate::{normal_game::PlayState, GameType};
 
 pub trait Building: Send + Sync {
     fn init_assets(&mut self, asset_server: &AssetServer);
@@ -23,6 +23,7 @@ pub trait Building: Send + Sync {
 
     fn sprite_image(&self) -> &Handle<Image>;
 
+    #[allow(dead_code)]
     fn tile_size(&self) -> UVec2;
 }
 
