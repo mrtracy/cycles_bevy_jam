@@ -1,6 +1,7 @@
 use bevy::{math::vec2, prelude::*};
 
-use crate::{fruit_type::FruitSpeciesMap, SpatialTracked};
+use super::fruit_type::FruitSpeciesMap;
+use crate::SpatialTracked;
 
 #[derive(Component)]
 pub struct FruitBranch {
@@ -96,7 +97,7 @@ pub struct HarvestFruitEvent {
 
 pub fn obs_fruit_harvested(
     event: Trigger<HarvestFruitEvent>,
-    mut score: ResMut<super::Score>,
+    mut score: ResMut<crate::Score>,
     mut commands: Commands,
     fruit_query: Query<&Parent, With<Fruit>>,
 ) {

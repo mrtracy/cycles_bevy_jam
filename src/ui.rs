@@ -10,13 +10,13 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::{
+use crate::normal_game::{
     level_map::OverlayMaterialResource,
-    normal_game::PlayState,
     nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},
-    AppState, GameType, Score,
+    PlayState,
 };
+use crate::{AppState, GameType, Score};
 
 pub fn main_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<AppState>>) {
     egui::CentralPanel::default()

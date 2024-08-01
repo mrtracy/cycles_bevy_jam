@@ -21,18 +21,9 @@ use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
 use normal_game::NormalGamePlugin;
-use ui::CurrentIntention;
-use units::NextWaveQueue;
 
-mod construction_preview;
-mod fruit;
-mod fruit_type;
-mod level_map;
 mod normal_game;
-mod nutrients;
-mod tree;
 mod ui;
-mod units;
 mod voting;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -90,8 +81,6 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
         .insert_resource(Score(0))
-        .insert_resource(CurrentIntention::None)
-        .insert_resource(NextWaveQueue::default())
         .insert_resource(Level::default())
         .init_state::<AppState>()
         .add_sub_state::<TimsGameState>()

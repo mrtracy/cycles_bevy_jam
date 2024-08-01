@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 use bevy_mod_picking::pointer::PointerId;
 
-use crate::{
-    ui::CurrentIntention, units::BuildingTypeMap, CameraPointerParam, MapQuery, MapQueryHelpers,
-};
+use super::units::BuildingTypeMap;
+use crate::{ui::CurrentIntention, CameraPointerParam, MapQuery, MapQueryHelpers};
 
 #[derive(Component)]
 pub struct BuildingPreview;

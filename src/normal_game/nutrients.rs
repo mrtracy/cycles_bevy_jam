@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{level_map::TilePassable, normal_game::PlayState};
+use super::{level_map::TilePassable, PlayState};
 
 #[derive(Component)]
 pub struct TileWater(pub u32);

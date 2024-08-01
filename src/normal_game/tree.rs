@@ -3,7 +3,8 @@ use std::any::TypeId;
 use bevy::prelude::*;
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 
-use crate::{fruit_type::FruitGenus, ui::CurrentIntention, units::DebugPlantType};
+use super::{fruit_type::FruitGenus, units::DebugPlantType};
+use crate::ui::CurrentIntention;
 
 #[derive(Component)]
 pub struct Tree {

@@ -1,18 +1,24 @@
 use std::{any::TypeId, time::Duration};
+mod construction_preview;
+mod fruit;
+mod fruit_type;
+pub mod level_map;
+pub mod nutrients;
+mod tree;
+pub mod units;
 
 use crate::{
-    construction_preview::BuildingPreviewPlugin,
-    fruit,
-    fruit_type::FruitSpeciesPlugin,
-    level_map,
-    nutrients::NutrientPlugin,
     ui::{self, CurrentIntention, OverlayMode},
-    units::{
-        BuildingTypeMap, BuildingTypePlugin, CurrentWave, DebugPlantType, IntermissionTimer,
-        NextWaveQueue,
-    },
     AppState, CameraPointerParam, GameType, MapQuery, MapQueryHelpers,
 };
+use construction_preview::BuildingPreviewPlugin;
+use fruit_type::FruitSpeciesPlugin;
+use nutrients::NutrientPlugin;
+use units::{
+    BuildingTypeMap, BuildingTypePlugin, CurrentWave, DebugPlantType, IntermissionTimer,
+    NextWaveQueue,
+};
+
 use bevy::prelude::*;
 use bevy_mod_picking::{pointer::InputPress, prelude::PointerButton};
 
@@ -55,8 +61,10 @@ pub struct NormalGamePlugin;
 
 impl Plugin for NormalGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(PlayState::Setup), level_map::kickoff_load)
-            .add_sub_state::<PlayState>()
+        app.add_sub_state::<PlayState>()
+            .insert_resource(CurrentIntention::None)
+            .insert_resource(NextWaveQueue::default())
+            .add_systems(OnEnter(PlayState::Setup), level_map::kickoff_load)
             .add_plugins(BuildingTypePlugin)
             .add_plugins(FruitSpeciesPlugin)
             .add_plugins(BuildingPreviewPlugin)

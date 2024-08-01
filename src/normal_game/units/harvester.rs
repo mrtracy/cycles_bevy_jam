@@ -4,14 +4,11 @@ use bevy::{math::uvec2, prelude::*};
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 use bevy_spatial::{kdtree::KDTree2, SpatialAccess};
 
-use crate::{
+use crate::normal_game::{
     fruit::{FruitGrowthState, HarvestFruitEvent},
-    ui::CurrentIntention,
-    units::Building,
-    AppState, GameType, SpatialTracked,
+    units::{Building, TowerRange},
 };
-
-use super::TowerRange;
+use crate::{ui::CurrentIntention, AppState, GameType, SpatialTracked};
 
 #[derive(Component)]
 pub struct Harvester;

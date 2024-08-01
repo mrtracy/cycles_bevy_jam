@@ -6,13 +6,13 @@ use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapType};
 use harvester::{HarvesterPlugin, HarvesterType};
 
-use crate::ui::CurrentIntention;
-use crate::{
+use super::{
     fruit::{FruitBranch, FruitBranchBundle},
     level_map::{CurrentLevel, TilePath},
-    tree, AppState,
+    tree, PlayState,
 };
-use crate::{normal_game::PlayState, GameType};
+use crate::ui::CurrentIntention;
+use crate::{AppState, GameType};
 
 pub trait Building: Send + Sync {
     fn init_assets(&mut self, asset_server: &AssetServer);
