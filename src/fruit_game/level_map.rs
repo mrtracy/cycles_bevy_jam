@@ -1,4 +1,4 @@
-use crate::{normal_game::PlayState, ui::OverlayTilemapMaterial};
+use crate::{fruit_game::PlayState, ui::OverlayTilemapMaterial};
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TilePos;

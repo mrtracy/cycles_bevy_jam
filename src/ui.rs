@@ -10,7 +10,7 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::normal_game::{
+use crate::fruit_game::{
     level_map::OverlayMaterialResource,
     nutrients::TileWater,
     units::{BuildingTypeMap, IntermissionTimer},

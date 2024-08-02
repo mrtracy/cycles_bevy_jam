@@ -4,7 +4,7 @@ use bevy::{math::uvec2, prelude::*};
 use bevy_mod_picking::{events::Pointer, prelude::On, selection::Select, PickableBundle};
 use bevy_spatial::{kdtree::KDTree2, SpatialAccess};
 
-use crate::normal_game::{
+use crate::fruit_game::{
     fruit::{FruitGrowthState, HarvestFruitEvent},
     units::{Building, TowerRange},
 };

@@ -20,9 +20,9 @@ use bevy_pancam::{PanCam, PanCamPlugin};
 use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use bevy_spatial::{AutomaticUpdate, SpatialStructure, TransformMode};
-use normal_game::NormalGamePlugin;
+use fruit_game::NormalGamePlugin;
 
-mod normal_game;
+mod fruit_game;
 mod ui;
 mod voting;
 
